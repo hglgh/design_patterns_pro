@@ -1,0 +1,26 @@
+# Compiled class files
+out/
+_verify/
+*.class
+
+# IDE（modules.xml / iml 是 IDEA 识别模块的关键，必须入库）
+.idea/*
+!.idea/modules.xml
+!.idea/encodings.xml
+!.idea/compiler.xml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Build
+sources.txt
+*.jar
+*.war
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
