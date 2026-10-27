@@ -3,7 +3,24 @@
 > 本文回答三个问题：**先学哪个、后学哪个、每个模式真正卡人的地方在哪里。**
 > 目录页见 [README](../README.md)，相似模式对比见 [02-pattern-comparison.md](02-pattern-comparison.md)，组合与继承的原理见 [07-composition-vs-inheritance.md](07-composition-vs-inheritance.md)。
 
-## 0. 先纠正一个常见误区
+## 0. 先选层：入门层与深度层
+
+每个模式目录现在有两层材料，不要一上来就啃工程版：
+
+| 层级 | 文件 | 什么时候读 |
+|---|---|---|
+| 入门 | `BEGINNER.md` + `beginner/BeginnerDemo.java` | 第一次接触这个模式，先建立「为什么用」的直觉 |
+| 深度 | `README.md` + 工程版 `Client.java` | 已能回答「为什么用」，要学完整角色、扩展与边界 |
+
+学一个模式的推荐动作：
+
+1. 读该目录的 `BEGINNER.md`，编译运行 `beginner/BeginnerDemo.java`，对照「改造前/改造后」；
+2. 合上文档，用自己的话回答：原来哪里疼、每个新抽象解决了什么、什么时候不该用；
+3. 再读 `README.md` 和 `Client.java`，把入门直觉接到完整工程实现上。
+
+23 篇入门文档统一遵循 [08-beginner-teaching-template.md](08-beginner-teaching-template.md) 的八段式结构。
+
+## 0.1 先纠正一个常见误区
 
 多数教程按「创建型 → 结构型 → 行为型」平铺直叙，于是很多人学完 23 个名词，遇到真实需求仍然一张口就是 `if/else`。
 

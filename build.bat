@@ -1,64 +1,63 @@
 @echo off
 REM ============================================================
-REM Design Patterns Pro - Windows ä¸€é”®ç¼–è¯‘è¿è¡Œè„šæœ¬
-REM éœ€è¦ JDK 25ï¼Œé»˜è®¤ä» F:\enCodingApps\JDK\jdk-25 è¯»å–
+REM Design Patterns Pro - Windows Ò»¼ü±àÒëÔËĞĞ½Å±¾
+REM ĞèÒª JDK 25£¬Ä¬ÈÏ´Ó F:\enCodingApps\JDK\jdk-25 ¶ÁÈ¡
+REM ============================================================
+REM ×¢Òâ£º±¾ÎÄ¼ş±£´æÎª GBK ±àÂë£¬Óë cmd Ä¬ÈÏ´úÂëÒ³Ò»ÖÂ£»
+REM ²»ÒªÁí´æÎª UTF-8£¬·ñÔòÖĞÎÄºóµÄ ! »á±»µ±³ÉË«×Ö½ÚµÄÒ»²¿·ÖÍÌµô¡£
 REM ============================================================
 setlocal enabledelayedexpansion
 
+set "ROOT=%~dp0"
 set "JDK_HOME=F:\enCodingApps\JDK\jdk-25"
 set "JAVAC=%JDK_HOME%\bin\javac.exe"
 set "JAVA=%JDK_HOME%\bin\java.exe"
-set "SRC_DIR=src"
-set "OUT_DIR=out"
+set "SRC_DIR=%ROOT%src"
+set "OUT_DIR=%ROOT%out"
 
 if not exist "%JAVAC%" (
-    echo [ERROR] æœªæ‰¾åˆ° JDKï¼š%JDK_HOME%
-    echo è¯·ä¿®æ”¹ build.bat ä¸­çš„ JDK_HOME å˜é‡
+    echo [ERROR] Î´ÕÒµ½ JDK£º%JDK_HOME%
+    echo ÇëĞŞ¸Ä build.bat ÖĞµÄ JDK_HOME ±äÁ¿
     exit /b 1
 )
 
 echo ============================================================
-echo [1/3] æ¸…ç†è¾“å‡ºç›®å½• %OUT_DIR%
+echo [1/3] ÇåÀíÊä³öÄ¿Â¼ %OUT_DIR%
 echo ============================================================
 if exist "%OUT_DIR%" rmdir /s /q "%OUT_DIR%"
 mkdir "%OUT_DIR%"
 
 echo ============================================================
-echo [2/3] ç¼–è¯‘å…¨éƒ¨æºç ï¼ˆ--release 25ï¼‰
+echo [2/3] ±àÒëÈ«²¿Ô´Âë£¨--release 25£©
 echo ============================================================
 dir /s /b "%SRC_DIR%\*.java" > sources.txt
 "%JAVAC%" --release 25 -encoding UTF-8 -d "%OUT_DIR%" "@sources.txt"
 if errorlevel 1 (
-    echo [ERROR] ç¼–è¯‘å¤±è´¥
+    echo [ERROR] ±àÒëÊ§°Ü
     del sources.txt
     exit /b 1
 )
 del sources.txt
-echo [OK] ç¼–è¯‘æˆåŠŸ
+echo [OK] ±àÒë³É¹¦
 
 echo ============================================================
-echo [3/3] ä¾æ¬¡è¿è¡Œæ¯ä¸ªæ¨¡å¼çš„ Client
+echo [3/3] ÒÀ´ÎÔËĞĞÃ¿¸öÄ£Ê½µÄ Client
 echo ============================================================
 
-set "MAIN_CLASSES="
 for /f "delims=" %%f in ('dir /s /b "%OUT_DIR%\*.class" ^| findstr /i "Client.class"') do (
     set "CLS=%%f"
     set "CLS=!CLS:%OUT_DIR%\=!"
     set "CLS=!CLS:\=.!"
     set "CLS=!CLS:.class=!"
-    set "MAIN_CLASSES=!MAIN_CLASSES! !CLS!"
-)
-
-for %%m in (!MAIN_CLASSES!) do (
     echo.
     echo ------------------------------------------------------------
-    echo è¿è¡Œï¼š%%m
+    echo ÔËĞĞ£º!CLS!
     echo ------------------------------------------------------------
-    "%JAVA%" -cp "%OUT_DIR%" %%m
+    "%JAVA%" -cp "%OUT_DIR%" !CLS!
 )
 
 echo.
 echo ============================================================
-echo å…¨éƒ¨è¿è¡Œå®Œæ¯•
+echo È«²¿ÔËĞĞÍê±Ï
 echo ============================================================
 endlocal

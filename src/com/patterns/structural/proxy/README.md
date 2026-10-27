@@ -1,5 +1,8 @@
 # 代理模式（Proxy Pattern）
 
+> **第一次接触这个模式？** 先读 [BEGINNER.md](BEGINNER.md)（通俗入门），
+> 再回来读这篇工程深度版。
+
 > 包路径：`com.patterns.structural.proxy`
 > 运行入口：`com.patterns.structural.proxy.Client`
 > 分类：结构型模式

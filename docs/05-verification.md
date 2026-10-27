@@ -3,6 +3,7 @@
 > 本文件只记录**实际执行过**的验证，所有数字均来自命令输出。
 > 采集时间：2026-10-22；全量复核：2026-10-23（第四批文档补强与源码修复之后重新采集）。
 > **最新复核：2026-10-24**（新增 `combined.apigateway` 六模式组合案例 24 个文件 + `docs/06-modern-scenarios.md` 之后，全量编译、25 个入口、文档审计全部重跑，**所有数字以本节为准**）。
+> **2026-10-27 入门层复核**：新增 23 个 `beginner/BeginnerDemo.java` 与 23 份 `BEGINNER.md` 后，源文件从 287 增至 **310**，class 从 361 增至 **558**；25 个入口仍全部退出码 0、stderr 0 行、stdout 2531 行。**§2 的 287 / 361 与 §3-§5 的部分统计是 10-24 的历史基线**，最新数据见 [09-beginner-refactor-report.md](09-beginner-refactor-report.md) §5 与本文 §9。
 > 任何未执行的验证都会在 §7 明确标注，不做「应该能通过」的推断。
 
 ## 1. 验证环境
@@ -312,7 +313,7 @@ combined       orderservice.Client / apigateway.Client
 |---|---|---|
 | 单元测试 | **未编写** | 任务要求零依赖，不引入 JUnit。可复现性由「哈希比对」保证，不等价于覆盖率 |
 | 并发正确性 | **部分验证** | 仅享元做过多线程竞争测试（`_probe/FlyweightProProbe.java`，16 线程 × 3000 轮），结果：`HashMap + computeIfAbsent` 有 **5/3000 轮**重复创建，`ConcurrentHashMap` 版为 0/3000。其余模块均为单线程 Demo，未压测 |
-| `build.bat` / `build.sh` 端到端 | **未执行** | 两者调用的是同一组 `javac` / `java` 命令，本报告 §2 与 §3 已验证该命令组合；脚本本身只做路径拼接与遍历 |
+| `build.sh` 端到端 | **未执行** | 当前只有 Windows 环境。`build.bat` 已于 2026-10-27 端到端实跑，见 §9.5 |
 | Linux / macOS | **未验证** | 当前环境为 Windows，`build.sh` 未经实机执行 |
 | 创建型 / 结构型 README 的逐字输出比对 | **部分做** | 新补强的 5 份（singleton / composite / decorator / facade / flyweight）已核到行数与字节数；其余只做了链接与围栏审计 |
 | apigateway 的并发正确性 | **未验证** | 全部 Demo 单线程。`breakers` 用普通 `LinkedHashMap`、`HalfOpen.tryPass()` 无条件放行等 5 处并发/逻辑风险已在 [apigateway/README.md](../src/com/patterns/combined/apigateway/README.md) §8.3 逐条列出，但**没有压测证明它们一定会出错** |
@@ -337,6 +338,61 @@ sha256sum run.txt
 ```
 
 Windows 下用 `build.bat` 一条命令完成编译 + 依次运行全部入口。
+
+## 9. 入门层复核（2026-10-27）
+
+本轮验证脚本：`_verify/verify_all_sources.ps1`（全量编译 + 25 个入口）、`_verify/verify_all_beginner.ps1`（23 个入门 Demo）、`_verify/check_links_fences.ps1`（链接与围栏）。
+
+### 9.1 全量编译
+
+| 指标 | 结果 |
+|---|---|
+| 源文件数 | **310** |
+| 编译退出码 | **0** |
+| 错误 | **0** |
+| 告警（`-Xlint:all`） | **0** |
+| 产出 class 文件 | **558** |
+
+### 9.2 25 个工程入口
+
+| 指标 | 结果 |
+|---|---|
+| 入口数 | **25**（23 个模式 + 2 个组合示例） |
+| 退出码非 0 | **0** |
+| stderr 总行数 | **0** |
+| stdout 总行数 | **2531** |
+
+逐入口输出行数与 §3 的历史基线完全一致（如 command 252、apigateway 304、state 155），说明新增入门层没有改变工程版行为。
+
+### 9.3 23 个入门 Demo
+
+| 指标 | 结果 |
+|---|---|
+| 编译并运行的 Demo | **23** |
+| 失败 | **0** |
+| 输出落盘 | `_verify/beginner_out/<pattern>.txt` |
+
+### 9.4 文档检查
+
+| 检查项 | 结果 |
+|---|---|
+| Markdown 文件 | **58 份** |
+| 相对链接失效 | **0** |
+| 代码围栏非偶数 | **0** |
+
+### 9.5 一键脚本修复与实测
+
+`build.bat` 的运行循环原来把绝对路径当类名：`!CLS:%OUT_DIR%\=!` 只去掉了 `out\`，没有去掉 `E:\...` 盘符前缀，拼出的类名形如 `E:.codeFile...Client`。本轮已修：用 `%~dp0` 拼绝对路径，并在 `for` 循环内直接运行，不再拼成空格分隔的类名列表。
+
+| 指标 | 结果 |
+|---|---|
+| `cmd /c build.bat` 退出码 | **0** |
+| 输出中 `运行：` 头 | **25**（23 个模式 + 2 个组合示例） |
+| `找不到或无法加载主类` | **0** 次 |
+
+> 脚本文件保存为 **GBK**，与 cmd 默认代码页一致。不要把它另存为 UTF-8：中文后面的 `!CLS!` 会被当成 GBK 双字节的一部分吞掉，输出变成字面量 `CLS`。
+>
+> 已知限制：GBK 控制台下 `✓`、`→` 等字符显示为 `?`，这是代码页字符集限制，不是程序错误；需要完整字符时用 `java -Dstdout.encoding=UTF-8` 单独运行。
 
 ---
 

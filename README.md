@@ -13,18 +13,38 @@
 - **原理专文**：[docs/07-composition-vs-inheritance.md](docs/07-composition-vs-inheritance.md) 用装机、奶茶加料、泡茶、文件夹四个现实场景，把「组合 vs 继承」逐条映射到代码，含两个可直接编译运行的最小示例。
 - **贴近现实业务**：订单折扣、聊天室、文件系统、播放器、UI 组件库、文档导出、API 网关等场景，让模式用途一目了然。
 - **JDK 25 原生**：使用 record、sealed、switch 表达式、var 等现代 Java 特性，但不引入任何第三方依赖。
+- **两层教学**：每种模式新增一份通俗 `BEGINNER.md` + 一个单文件 `beginner/BeginnerDemo.java`，先讲「不用的痛点」，再讲「怎么推导」，最后讲「什么时候不用」。
+
+## 两层学习：先入门，再深入
+
+每个模式都准备了两层材料，不需要一上来就啃完整工程版：
+
+| 层级 | 文件 | 适合谁 | 目标 |
+|---|---|---|---|
+| 第一层：入门 | `BEGINNER.md` + `beginner/BeginnerDemo.java` | 学过 Java 语法，没系统学过设计模式 | 说清「为什么用、什么时候不用」 |
+| 第二层：深度 | `README.md` + 工程版 `Client.java` | 已理解动机，要做实现/面试 | 角色、协作、扩展、异常边界 |
+
+入门 Demo 都是**单文件、纯 Java、输出确定**：同一个文件里先跑「改造前」，再跑「改造后」，编译一次就能对照。23 篇入门文档按 [docs/08-beginner-teaching-template.md](docs/08-beginner-teaching-template.md) 的统一八段式写作。
+
+### 入门文档索引
+
+| 分类 | 模式（点击进入 `BEGINNER.md`） |
+|---|---|
+| 创建型 5 | [单例](src/com/patterns/creational/singleton/BEGINNER.md) · [工厂方法](src/com/patterns/creational/factorymethod/BEGINNER.md) · [抽象工厂](src/com/patterns/creational/abstractfactory/BEGINNER.md) · [建造者](src/com/patterns/creational/builder/BEGINNER.md) · [原型](src/com/patterns/creational/prototype/BEGINNER.md) |
+| 结构型 7 | [适配器](src/com/patterns/structural/adapter/BEGINNER.md) · [桥接](src/com/patterns/structural/bridge/BEGINNER.md) · [组合](src/com/patterns/structural/composite/BEGINNER.md) · [装饰器](src/com/patterns/structural/decorator/BEGINNER.md) · [外观](src/com/patterns/structural/facade/BEGINNER.md) · [享元](src/com/patterns/structural/flyweight/BEGINNER.md) · [代理](src/com/patterns/structural/proxy/BEGINNER.md) |
+| 行为型 11 | [责任链](src/com/patterns/behavioral/chainofresponsibility/BEGINNER.md) · [命令](src/com/patterns/behavioral/command/BEGINNER.md) · [解释器](src/com/patterns/behavioral/interpreter/BEGINNER.md) · [迭代器](src/com/patterns/behavioral/iterator/BEGINNER.md) · [中介者](src/com/patterns/behavioral/mediator/BEGINNER.md) · [备忘录](src/com/patterns/behavioral/memento/BEGINNER.md) · [观察者](src/com/patterns/behavioral/observer/BEGINNER.md) · [状态](src/com/patterns/behavioral/state/BEGINNER.md) · [策略](src/com/patterns/behavioral/strategy/BEGINNER.md) · [模板方法](src/com/patterns/behavioral/templatemethod/BEGINNER.md) · [访问者](src/com/patterns/behavioral/visitor/BEGINNER.md) |
 
 ## 项目规模（实测）
 
 | 指标 | 数值 |
 |---|---|
 | 模式覆盖 | 23 种 GoF 模式 + 2 个组合示例（orderservice 四模式 / apigateway 六模式） |
-| Java 源文件 | **287**（含 `util` 工具包 2 个） |
-| 代码物理行数 | **31123** |
-| 学习文档 | **25 份模块 README，合计 95056 行**（另有 8 份项目级文档，33 份 md 合计 100977 行 / 约 4.2 MB） |
-| 编译产物 | 361 个 class，`javac --release 25 -Xlint:all` **0 告警 0 字节 stderr**（5.9 秒） |
-| 运行验证 | 25 个入口全部退出码 0，stderr 全空，stdout 合计 2531 行 |
-| 文档审计 | 33 个 md、相对链接全部命中，**失效 0**，围栏全偶数 |
+| Java 源文件 | **310**（含 `util` 工具包 2 个、23 个入门 Demo） |
+| 代码物理行数 | **35614** |
+| 学习文档 | **25 份模块 README + 23 份 BEGINNER，合计 48 份模式文档**（含 9 份项目级文档，58 份 md 合计 109335 行） |
+| 编译产物 | **558** 个 class，`javac --release 25 -Xlint:all` **0 错误 0 告警** |
+| 运行验证 | **25** 个入口全部退出码 0，stderr **0 行**，stdout 合计 **2531** 行 |
+| 文档审计 | **58** 个 md、相对链接全部命中，**失效 0**，围栏全偶数 |
 
 > 完整验证数据见 [docs/05-verification.md](docs/05-verification.md)。
 
@@ -73,7 +93,9 @@ design_patterns_pro/
 │   ├── 03-optimization-log.md    # 项目优化记录
 │   ├── 05-verification.md        # 编译运行验证结果
 │   ├── 06-modern-scenarios.md    # 现代场景：JDK / 框架 / 云原生里的模式落点
-│   └── 07-composition-vs-inheritance.md # 组合 vs 继承：设计模式的第一道分水岭
+│   ├── 07-composition-vs-inheritance.md # 组合 vs 继承：设计模式的第一道分水岭
+│   ├── 08-beginner-teaching-template.md # 入门层八段式教学模板与验收清单
+│   └── 09-beginner-refactor-report.md # 入门层改造报告与实测验证数据
 └── src/com/patterns/
     ├── creational/               # 创建型（5）
     │   ├── singleton/            # 单例
@@ -108,7 +130,9 @@ design_patterns_pro/
 
 每个模式目录都包含：
 - 若干 `.java` 源文件（接口 / 抽象类 / 实现类 / Client）
-- 一份 `README.md` 学习文档
+- 一份 `README.md` 深度文档
+- 一份 `BEGINNER.md` 入门文档
+- `beginner/BeginnerDemo.java` 单文件入门 Demo（改造前 + 改造后）
 
 ## 23 种模式导航
 
@@ -166,6 +190,9 @@ design_patterns_pro/
 **速成路线（面试优先）**：
 单例 → 工厂方法 → 策略 → 观察者 → 装饰器 → 代理 → 责任链 → 模板方法 → 适配器 → 建造者
 
+每学一个模式，建议顺序是：先读该目录的 `BEGINNER.md` 并运行 `beginner/BeginnerDemo.java`，
+能回答「为什么用、什么时候不用」后，再读 `README.md` 和工程版 `Client.java`。
+
 **系统路线（按难度递增）**：
 1. 创建型：单例 → 工厂方法 → 抽象工厂 → 建造者 → 原型
 2. 结构型：适配器 → 装饰器 → 代理 → 外观 → 组合 → 桥接 → 享元
@@ -201,7 +228,7 @@ design_patterns_pro/
 
 ## 编译与运行验证
 
-详见 [docs/05-verification.md](docs/05-verification.md)。
+详见 [docs/05-verification.md](docs/05-verification.md)。入门层 23 个 Demo 的改造范围、逐类规模与已知问题见 [docs/09-beginner-refactor-report.md](docs/09-beginner-refactor-report.md)。
 
 ## 许可
 
