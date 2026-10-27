@@ -1,7 +1,7 @@
 # 推荐学习顺序：23 种模式该按什么顺序学
 
 > 本文回答三个问题：**先学哪个、后学哪个、每个模式真正卡人的地方在哪里。**
-> 目录页见 [README](../README.md)，相似模式对比见 [02-pattern-comparison.md](02-pattern-comparison.md)。
+> 目录页见 [README](../README.md)，相似模式对比见 [02-pattern-comparison.md](02-pattern-comparison.md)，组合与继承的原理见 [07-composition-vs-inheritance.md](07-composition-vs-inheritance.md)。
 
 ## 0. 先纠正一个常见误区
 
@@ -18,7 +18,7 @@
 | 概念 | 含义 | 在哪个模式里第一次真正用到 |
 |---|---|---|
 | **面向接口编程** | 变量声明成接口类型，运行时才决定是哪个实现 | 策略（`PriceCalculator` 持有 `DiscountStrategy`） |
-| **组合优于继承** | 把行为做成成员对象，而不是做成父类方法 | 装饰器（`TextDecorator` 持有一个 `TextComponent`） |
+| **[组合优于继承](07-composition-vs-inheritance.md)** | 把行为做成成员对象，而不是做成父类方法 | 装饰器（`TextDecorator` 持有一个 `TextComponent`） |
 | **多态分派** | 调 `x.foo()` 时执行哪个 `foo`，由 `x` 的运行时类型决定 | 模板方法（父类调 `hook()`，执行的是子类版本） |
 
 这三个概念在本项目中都有最朴素的例子。**如果你能用自己的话讲清 `TextDecorator` 为什么既 `implements TextComponent` 又持有一个 `TextComponent` 字段**，前置概念就算过关了。

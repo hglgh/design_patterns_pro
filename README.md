@@ -10,6 +10,7 @@
 - **配套学习文档**：每种模式一份 `README.md`，含现实案例、原始实现、设计动机、设计推导、代码解析、执行流程、扩展对比、优缺点与误区、面试与自测 9 大模块。
 - **两个真实组合案例**：`orderservice`（策略 + 装饰器 + 责任链 + 工厂）与 `apigateway`（责任链 + 策略 + 装饰器 + 状态 + 观察者 + 享元），后者配 5092 行深度拆解与 304 行可复现输出。
 - **现代场景地图**：[docs/06-modern-scenarios.md](docs/06-modern-scenarios.md) 把 23 个模式映射到 JDK 源码、主流框架扩展点与云原生组件上，并回答「record / sealed / 虚拟线程出现后还要不要手写」。
+- **原理专文**：[docs/07-composition-vs-inheritance.md](docs/07-composition-vs-inheritance.md) 用装机、奶茶加料、泡茶、文件夹四个现实场景，把「组合 vs 继承」逐条映射到代码，含两个可直接编译运行的最小示例。
 - **贴近现实业务**：订单折扣、聊天室、文件系统、播放器、UI 组件库、文档导出、API 网关等场景，让模式用途一目了然。
 - **JDK 25 原生**：使用 record、sealed、switch 表达式、var 等现代 Java 特性，但不引入任何第三方依赖。
 
@@ -20,10 +21,10 @@
 | 模式覆盖 | 23 种 GoF 模式 + 2 个组合示例（orderservice 四模式 / apigateway 六模式） |
 | Java 源文件 | **287**（含 `util` 工具包 2 个） |
 | 代码物理行数 | **31123** |
-| 学习文档 | **25 份模块 README，合计 95056 行**（另有 7 份项目级文档，32 份 md 合计 100509 行 / 约 4.2 MB） |
+| 学习文档 | **25 份模块 README，合计 95056 行**（另有 8 份项目级文档，33 份 md 合计 100977 行 / 约 4.2 MB） |
 | 编译产物 | 361 个 class，`javac --release 25 -Xlint:all` **0 告警 0 字节 stderr**（5.9 秒） |
 | 运行验证 | 25 个入口全部退出码 0，stderr 全空，stdout 合计 2531 行 |
-| 文档审计 | 32 个 md、238 条相对链接、509 条锚点，**失效 0**，围栏全偶数 |
+| 文档审计 | 33 个 md、相对链接全部命中，**失效 0**，围栏全偶数 |
 
 > 完整验证数据见 [docs/05-verification.md](docs/05-verification.md)。
 
@@ -71,7 +72,8 @@ design_patterns_pro/
 │   ├── 02-pattern-comparison.md  # 相似模式对比
 │   ├── 03-optimization-log.md    # 项目优化记录
 │   ├── 05-verification.md        # 编译运行验证结果
-│   └── 06-modern-scenarios.md    # 现代场景：JDK / 框架 / 云原生里的模式落点
+│   ├── 06-modern-scenarios.md    # 现代场景：JDK / 框架 / 云原生里的模式落点
+│   └── 07-composition-vs-inheritance.md # 组合 vs 继承：设计模式的第一道分水岭
 └── src/com/patterns/
     ├── creational/               # 创建型（5）
     │   ├── singleton/            # 单例
@@ -174,6 +176,7 @@ design_patterns_pro/
 详见 [docs/02-pattern-comparison.md](docs/02-pattern-comparison.md)。
 
 快速索引：
+- 组合 vs 继承（复用机制，不是模式对比，见 [docs/07-composition-vs-inheritance.md](docs/07-composition-vs-inheritance.md)）
 - 工厂方法 vs 抽象工厂 vs 建造者 vs 原型
 - 适配器 vs 装饰器 vs 代理 vs 外观
 - 策略 vs 状态 vs 命令 vs 模板方法

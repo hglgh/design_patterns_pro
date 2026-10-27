@@ -196,14 +196,16 @@ combined       orderservice.Client / apigateway.Client
 
 ## 5. 文档审计
 
-对全项目 32 个 Markdown 文件（25 份模块 README + 顶层 README + `docs/` 下 6 份）做统一机器审计，脚本为 `_probe/audit_docs.ps1`：
+对全项目 33 个 Markdown 文件（25 份模块 README + 顶层 README + `docs/` 下 7 份）做统一机器审计，脚本为 `_probe/audit_docs.ps1`：
 
 | 检查项 | 方法 | 结果 |
 |---|---|---|
-| 代码围栏成对 | 统计以 ` ``` ` 开头的行数（含列表内缩进围栏），必须为偶数 | **32/32 全部偶数** |
+| 代码围栏成对 | 统计以 ` ``` ` 开头的行数（含列表内缩进围栏），必须为偶数 | **33/33 全部偶数** |
 | 相对链接有效 | 先剥离围栏代码块与行内代码，再提取 `](path)`，`Join-Path` 后 `Test-Path` | **238 条，0 条失效** |
 | 页内锚点存在 | 提取 `](#anchor)`，用「只保留字母与数字」的宽松键与各级标题比对 | **509 条，0 条失效** |
 | 九大模块齐全 | 统计 `## ` 级标题数量 | 25 份模块 README 全部 ≥11 |
+
+> **2026-10-27 新增 [07-composition-vs-inheritance.md](07-composition-vs-inheritance.md) 后**：表中的 238 条相对链接与 509 条锚点属于新增文档之前的全量审计值。新增文档已单独核对：468 行、5 对代码围栏（10 行）、28 条相对链接全部命中、0 条页内锚点引用。
 
 > 2026-10-24 修了脚本的一个真 bug：原实现递归遍历整个项目目录，把 IDEA 编译产物 `out\production\design_patterns_pro\...` 里的 README **副本**当成第二份文档，一次误报了 28 条 BAD_LINK。加一句过滤后归零：
 >
@@ -338,4 +340,4 @@ Windows 下用 `build.bat` 一条命令完成编译 + 依次运行全部入口�
 
 ---
 
-相关文档：[00 源码审查](00-source-review.md) · [01 学习路径](01-learning-path.md) · [02 模式对比](02-pattern-comparison.md) · [03 优化记录](03-optimization-log.md)
+相关文档：[00 源码审查](00-source-review.md) · [01 学习路径](01-learning-path.md) · [02 模式对比](02-pattern-comparison.md) · [03 优化记录](03-optimization-log.md) · [07 组合与继承](07-composition-vs-inheritance.md)
