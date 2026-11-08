@@ -4,6 +4,7 @@
 > 采集时间：2026-10-22；全量复核：2026-10-23（第四批文档补强与源码修复之后重新采集）。
 > **最新复核：2026-10-24**（新增 `combined.apigateway` 六模式组合案例 24 个文件 + `docs/06-modern-scenarios.md` 之后，全量编译、25 个入口、文档审计全部重跑，**所有数字以本节为准**）。
 > **2026-10-27 入门层复核**：新增 23 个 `beginner/BeginnerDemo.java` 与 23 份 `BEGINNER.md` 后，源文件从 287 增至 **310**，class 从 361 增至 **558**；25 个入口仍全部退出码 0、stderr 0 行、stdout 2531 行。**§2 的 287 / 361 与 §3-§5 的部分统计是 10-24 的历史基线**，最新数据见 [09-beginner-refactor-report.md](09-beginner-refactor-report.md) §5 与本文 §9。
+> **2026-11-08 变更**：根目录的 `build.bat` / `build.sh` 已删除（项目定位是纯 Java 教学项目，不再维护构建脚本）。编译与运行统一使用标准 `javac` / `java`，命令见[根 README](../README.md#编译与运行)。下文保留历史验证记录，其中提到旧脚本的行已加注。
 > 任何未执行的验证都会在 §7 明确标注，不做「应该能通过」的推断。
 
 ## 1. 验证环境
@@ -19,7 +20,7 @@
 
 ## 2. 全量编译
 
-命令（等价于 `build.bat` 的编译段，额外开启全部告警）：
+命令（额外开启全部告警）：
 
 ```bash
 javac -Xlint:all --release 25 -encoding UTF-8 -d out $(find src -name "*.java")
@@ -123,7 +124,7 @@ javac -Xlint:all --release 25 -encoding UTF-8 -d out $(find src -name "*.java")
 
 **结果：25 / 25 全部退出码 0，无一个模块抛异常或崩溃。**
 
-> 2026-10-24 本轮对全部 25 个入口重新跑了一遍（`javac --release 25` 全量重编后，用临时目录 `_verify\classes` 做 classpath；该目录已随临时产物清理，重跑时用 `build.bat` 生成 `out\` 或重新 `javac -d _verify\classes` 均可），结果：**退出码全部 0，stderr 全部 0 字节，stdout 总行数 2531 行**，逐模块行数与本表完全一致。
+> 2026-10-24 本轮对全部 25 个入口重新跑了一遍（`javac --release 25` 全量重编后，用临时目录 `_verify\classes` 做 classpath；该目录已随临时产物清理，重跑时先 `javac -d out` 生成产物即可），结果：**退出码全部 0，stderr 全部 0 字节，stdout 总行数 2531 行**，逐模块行数与本表完全一致。
 > 其中 apigateway 的 304 行 / 16085 字节 / SHA `E4888CC8…` 是**两次运行完全一致**的确定性输出，可用于回归。
 
 ### 3.1 入口完整性核对
@@ -202,7 +203,7 @@ combined       orderservice.Client / apigateway.Client
 | 检查项 | 方法 | 结果 |
 |---|---|---|
 | 代码围栏成对 | 统计以 ` ``` ` 开头的行数（含列表内缩进围栏），必须为偶数 | **33/33 全部偶数** |
-| 相对链接有效 | 先剥离围栏代码块与行内代码，再提取 `](path)`，`Join-Path` 后 `Test-Path` | **238 条，0 条失效** |
+| 相对链接有效 | 先剥离围栏代码块与行内代码，再用正则提取所有相对链接，`Join-Path` 后 `Test-Path` | **238 条，0 条失效** |
 | 页内锚点存在 | 提取 `](#anchor)`，用「只保留字母与数字」的宽松键与各级标题比对 | **509 条，0 条失效** |
 | 九大模块齐全 | 统计 `## ` 级标题数量 | 25 份模块 README 全部 ≥11 |
 
@@ -313,8 +314,8 @@ combined       orderservice.Client / apigateway.Client
 |---|---|---|
 | 单元测试 | **未编写** | 任务要求零依赖，不引入 JUnit。可复现性由「哈希比对」保证，不等价于覆盖率 |
 | 并发正确性 | **部分验证** | 仅享元做过多线程竞争测试（`_probe/FlyweightProProbe.java`，16 线程 × 3000 轮），结果：`HashMap + computeIfAbsent` 有 **5/3000 轮**重复创建，`ConcurrentHashMap` 版为 0/3000。其余模块均为单线程 Demo，未压测 |
-| `build.sh` 端到端 | **未执行** | 当前只有 Windows 环境。`build.bat` 已于 2026-10-27 端到端实跑，见 §9.5 |
-| Linux / macOS | **未验证** | 当前环境为 Windows，`build.sh` 未经实机执行 |
+| 一键批量跑全部入口 | **不存在** | 2026-11-08 已删除 `build.bat` / `build.sh`，项目只保留 `javac` / `java` 标准用法。需要批量验证时照着 §3 的表逐条执行 |
+| Linux / macOS 实机 | **未验证** | 当前环境为 Windows。编译与运行命令本身跨平台，但未在 Linux / macOS 上实跑 |
 | 创建型 / 结构型 README 的逐字输出比对 | **部分做** | 新补强的 5 份（singleton / composite / decorator / facade / flyweight）已核到行数与字节数；其余只做了链接与围栏审计 |
 | apigateway 的并发正确性 | **未验证** | 全部 Demo 单线程。`breakers` 用普通 `LinkedHashMap`、`HalfOpen.tryPass()` 无条件放行等 5 处并发/逻辑风险已在 [apigateway/README.md](../src/com/patterns/combined/apigateway/README.md) §8.3 逐条列出，但**没有压测证明它们一定会出错** |
 | 页内锚点在真实 GitHub 上的跳转 | **未验证** | 无网络环境实测，只验证了「目标章节存在」，见 §5.3 |
@@ -337,7 +338,7 @@ sha256sum run.txt
 # 若改用 -Dstdout.encoding=GBK：8102 字节 / 53928A97720547FF…，行数仍是 152。
 ```
 
-Windows 下用 `build.bat` 一条命令完成编译 + 依次运行全部入口。
+Windows 下把 `$(find src -name "*.java")` 换成 PowerShell 的 `(Get-ChildItem -Recurse -Filter *.java src).FullName`，其余命令不变。
 
 ## 9. 入门层复核（2026-10-27）
 
@@ -380,20 +381,106 @@ Windows 下用 `build.bat` 一条命令完成编译 + 依次运行全部入口�
 | 相对链接失效 | **0** |
 | 代码围栏非偶数 | **0** |
 
-### 9.5 一键脚本修复与实测
+### 9.5 已移除的构建脚本
 
-`build.bat` 的运行循环原来把绝对路径当类名：`!CLS:%OUT_DIR%\=!` 只去掉了 `out\`，没有去掉 `E:\...` 盘符前缀，拼出的类名形如 `E:.codeFile...Client`。本轮已修：用 `%~dp0` 拼绝对路径，并在 `for` 循环内直接运行，不再拼成空格分隔的类名列表。
+2026-10-27 曾用 `build.bat` 做「编译 + 逐入口运行」的一键封装，当时记录了一个真实缺陷：运行循环用 `!CLS:%OUT_DIR%\=!` 只去掉 `out\` 前缀，没去掉 `E:\…` 盘符前缀，拼出的类名形如 `E:.codeFile...Client`，导致 25 个入口全部报「找不到主类」。
 
-| 指标 | 结果 |
-|---|---|
-| `cmd /c build.bat` 退出码 | **0** |
-| 输出中 `运行：` 头 | **25**（23 个模式 + 2 个组合示例） |
-| `找不到或无法加载主类` | **0** 次 |
-
-> 脚本文件保存为 **GBK**，与 cmd 默认代码页一致。不要把它另存为 UTF-8：中文后面的 `!CLS!` 会被当成 GBK 双字节的一部分吞掉，输出变成字面量 `CLS`。
->
-> 已知限制：GBK 控制台下 `✓`、`→` 等字符显示为 `?`，这是代码页字符集限制，不是程序错误；需要完整字符时用 `java -Dstdout.encoding=UTF-8` 单独运行。
+2026-11-08 该脚本连同 `build.sh` 一起删除：教学项目不需要维护一套构建工具体系，`javac` + `java` 两条命令已足够说明如何编译运行。上面的缺陷记录保留，作为「为什么不该在项目里养一个脚本」的案例。
 
 ---
 
-相关文档：[00 源码审查](00-source-review.md) · [01 学习路径](01-learning-path.md) · [02 模式对比](02-pattern-comparison.md) · [03 优化记录](03-optimization-log.md) · [07 组合与继承](07-composition-vs-inheritance.md)
+## 10. 第三轮全量复核（2026-11-08）
+
+本轮改动涉及：删除构建脚本、修正理论错误、新增 UML 图谱 / 选择指南 / 五个练习题。下面是改完后的全量重跑。
+
+### 10.1 全量编译
+
+```powershell
+javac --release 25 -encoding UTF-8 -Xlint:all -d out (Get-ChildItem -Recurse -Filter *.java src).FullName
+```
+
+| 项 | 结果 |
+|---|---|
+| 退出码 | **0** |
+| 编译告警 | **0 行**（`-Xlint:all` 全开） |
+| 源文件 | **310**（`src/` 下） |
+| class 产物 | **558** |
+
+`src/` 本轮**未改动任何 Java 文件** —— 改动全部在文档层与 `docs/practice/solutions/`（新目录，不参与 `src/` 全量编译）。
+
+### 10.2 25 个工程入口
+
+| 项 | 结果 |
+|---|---|
+| 入口数 | **25** |
+| 退出码非 0 | **0** |
+| stderr 有输出 | **0** |
+| stdout 合计 | **2531** 行（口径：按 `\n` 切分后去掉末尾空段） |
+
+逐入口行数与 §3 一致。复跑方式：见根 README「编译与运行」与本章 §8。
+
+### 10.3 5 个练习题参考实现
+
+全部用**单文件源模式**直接跑（不经过 `out/`）：
+
+```bash
+java docs/practice/solutions/OrderDiscountSolution.java
+java docs/practice/solutions/OrderStateSolution.java
+java docs/practice/solutions/NotificationSolution.java
+java docs/practice/solutions/ReportExportSolution.java
+java docs/practice/solutions/OrderApiSolution.java
+```
+
+| 文件 | 行数 | 退出码 | stderr |
+|---|---|---|---|
+| `OrderDiscountSolution.java` | 484 | 0 | 空 |
+| `OrderStateSolution.java` | 300 | 0 | 空 |
+| `NotificationSolution.java` | 397 | 0 | 空 |
+| `ReportExportSolution.java` | 382 | 0 | 空 |
+| `OrderApiSolution.java` | 465 | 0 | 空 |
+
+合计 **2028** 行，全部输出确定（无时间戳、无随机数、无哈希顺序依赖）。
+
+> **开发过程中真实踩到并已修复的 4 个 bug**（保留记录，因为它们正好对应练习要考的知识点）：
+> 1. 链装配写成 `cursor = cursor.linkTo(next)`，因 `linkTo` 返回 `this` 导致每次覆盖 `head.next`，中间节点全部丢失 → 加日志对照节点数才定位到；
+> 2. 百分比折扣用订单原价而非当前价计算，300 元打九折减了 32 而不是 30 → 接口签名改为 `discount(BigDecimal price, Order order)`；
+> 3. `EnumMap<>(OrderState.class)` 编译不过 —— `EnumMap` 的 key 必须是 enum 类型，而 `OrderState` 是接口 → 改 `LinkedHashMap`；
+> 4. `record` 实现类里直接写 `valid(...)` 调接口静态方法报「找不到符号」——接口静态方法不被实现类继承 → 必须写 `DiscountPolicy.valid(...)`。
+>
+> 另外 `_verify/runjava.ps1` 踩了两个环境坑：`java -Dstdout.encoding=UTF-8` 在 PowerShell 下会被空格拆成两个参数（要加引号）；`$psi.ArgumentList` 只在 .NET Core 可用，Windows PowerShell 5.1 必须用 `$psi.Arguments` 字符串。
+
+### 10.4 文档审计
+
+| 项 | 结果 |
+|---|---|
+| Markdown 文件 | **67 份**（含 `docs/README.md` 与 `docs/practice/`） |
+| 相对链接抽取 | **710** 条 |
+| 其中失效 | **0** |
+| 代码围栏非偶数 | **0** |
+| Mermaid 图表 | **40** 张（atlas 27 + 选择指南 3 + 练习 10） |
+
+检查脚本（`_verify/checklinks.ps1`，不纳入版本库）的口径：先剥离围栏代码块与行内代码（含双反引号包裹），再提取相对链接，跳过 `http:` / `mailto:` / 纯锚点，剥离锚点后 `Join-Path` + `Test-Path`。
+
+第一次跑时报告了 3 条「失败」，全部是 §9.4 / 本文自身的说明文字里用行内代码展示的链接示例 —— 把这些说明改写后，**重跑结果为 0 条失败**。这也是一个小教训：**检查脚本和它自己的说明文档会互相干扰，剥离规则必须比被检查的写法更“宽”**。
+
+### 10.5 本轮新增 / 修改的文件
+
+| 类型 | 文件 |
+|---|---|
+| 新增 | `docs/10-uml-atlas.md`（1446 行）· `docs/pattern-selection-guide.md`（856 行）· `docs/README.md` · `docs/practice/`（README + 5 题 + 5 份参考实现） |
+| 修改 | `README.md` · `docs/00` · `docs/02` · `docs/03` · `docs/05` · `docs/07` · `docs/09` · `.gitignore` · 8 份模式 README 的运行方式段 |
+| 删除 | `build.bat` · `build.sh` |
+| 未改动 | `src/` 下全部 310 个 Java 文件 |
+
+### 10.6 仍未验证 / 未覆盖
+
+| 项 | 状态 | 原因 |
+|---|---|---|
+| Linux / macOS 实机运行 | **未验证** | 只在 Windows + PowerShell 7 / Windows PowerShell 5.1 上跑过 |
+| Mermaid 图在 GitHub 上的渲染 | **未验证** | 只做了语法对照，未在真实 GitHub 页面确认；本地无渲染器 |
+| 浏览器预览 | **未验证** | 项目是纯 Java，无 Web 入口 |
+| 23 份 `BEGINNER.md` 的逐字内容审校 | **未逐字重审** | 本轮只修正了理论错误与失效引用，未重写教学段落 |
+
+---
+
+相关文档：[00 源码审查](00-source-review.md) · [01 学习路径](01-learning-path.md) · [02 模式对比](02-pattern-comparison.md) · [03 优化记录](03-optimization-log.md) · [07 组合与继承](07-composition-vs-inheritance.md) · [10 UML 图谱](10-uml-atlas.md) · [选择指南](pattern-selection-guide.md)

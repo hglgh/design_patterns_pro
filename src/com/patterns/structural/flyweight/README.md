@@ -2876,7 +2876,7 @@ System.out.printf("渲染 '%s' ...", Character.toString(codePoint));
 # 必须连同原项目的 5 个源文件一起编译，否则找不到同包类
 javac -encoding UTF-8 -d _probe/orig_flyweight design_patterns/src/structuraltype/FlyweightPattern/*.java _probe/FlyweightOrigProbe.java
 
-# 重构版探针：classpath 用 build.bat 的产物 out
+# 重构版探针：classpath 用全量编译的产物 out
 javac -encoding UTF-8 -cp design_patterns_pro/out -d _probe/out2 _probe/FlyweightProProbe.java
 ```
 

@@ -14,7 +14,6 @@ _verify/
 .project
 
 # Build
-sources.txt
 *.jar
 *.war
 

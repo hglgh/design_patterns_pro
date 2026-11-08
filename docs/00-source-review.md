@@ -28,7 +28,7 @@
 | G3 | 部分类使用 `default`（package-private）可见性，如 `structural/CompositePattern/demo2/Folder`、`behavioral/StatePattern/Order` | 无法跨包复用，教学演示不友好 | 全部改为 `public` |
 | G4 | 大量 Javadoc 使用 `@ClassName/@Package/@Description/@Author/@Create` 自定义标签 | 不是标准 Javadoc，IDE 无法生成文档 | 改为标准 Javadoc（`@author`、`@since`），并补全类型/方法说明 |
 | G5 | 每个模式没有独立 README，学习者需要打开代码才能理解意图 | 学习成本高 | 每种模式配一份 `README.md`，含现实案例、原始实现、动机、推导、代码解析、执行流程、扩展对比、优缺点、面试题 |
-| G6 | 项目根目录没有 README，没有编译/运行说明 | 无法快速上手 | 新增根 `README.md` + `build.bat` / `build.sh` 一键编译运行 |
+| G6 | 项目根目录没有 README，没有编译/运行说明 | 无法快速上手 | 新增根 `README.md`（编译/运行说明） |
 | G7 | `CombineApplicationExamples` 里 `DiscountStrategy` 接口方法叫 `applyDiscount`，而 `BehaviorType/StrategyPattern` 里叫 `calculate` | 同名接口方法名不一致，容易混淆 | 统一命名为 `applyDiscount(double)` |
 | G8 | `Prototype` 里 `DocumentPrototype extends Cloneable` 后又自定义 `cloneDocument()` | Cloneable 是标记接口，继承它没有实际作用，且 `cloneDocument` 与 `clone` 语义重叠 | 保留 `cloneDocument()` 作为业务语义入口，内部委托 `Object.clone()`，`Cloneable` 仅作为标记 |
 

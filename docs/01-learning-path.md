@@ -1,22 +1,25 @@
 # 推荐学习顺序：23 种模式该按什么顺序学
 
 > 本文回答三个问题：**先学哪个、后学哪个、每个模式真正卡人的地方在哪里。**
-> 目录页见 [README](../README.md)，相似模式对比见 [02-pattern-comparison.md](02-pattern-comparison.md)，组合与继承的原理见 [07-composition-vs-inheritance.md](07-composition-vs-inheritance.md)。
+>
+> 目录页见 [README](../README.md) ｜ 相似模式对比见 [02-pattern-comparison.md](02-pattern-comparison.md) ｜ 组合与继承的原理见 [07-composition-vs-inheritance.md](07-composition-vs-inheritance.md) ｜ **选哪个模式的推导方法见 [pattern-selection-guide.md](pattern-selection-guide.md)** ｜ 练手见 [practice/](practice/README.md) ｜ 类图全集见 [10-uml-atlas.md](10-uml-atlas.md)
 
-## 0. 先选层：入门层与深度层
+## 0. 先选层：入门层、深度层、实践层
 
-每个模式目录现在有两层材料，不要一上来就啃工程版：
+每个模式目录现在有两层材料，整个项目再加一层实践，不要一上来就啃工程版：
 
 | 层级 | 文件 | 什么时候读 |
 |---|---|---|
 | 入门 | `BEGINNER.md` + `beginner/BeginnerDemo.java` | 第一次接触这个模式，先建立「为什么用」的直觉 |
 | 深度 | `README.md` + 工程版 `Client.java` | 已能回答「为什么用」，要学完整角色、扩展与边界 |
+| 实践 | [practice/](practice/README.md) 的五个题 | 能读懂模式，但拿到需求还是不知道选哪个 |
 
 学一个模式的推荐动作：
 
 1. 读该目录的 `BEGINNER.md`，编译运行 `beginner/BeginnerDemo.java`，对照「改造前/改造后」；
 2. 合上文档，用自己的话回答：原来哪里疼、每个新抽象解决了什么、什么时候不该用；
-3. 再读 `README.md` 和 `Client.java`，把入门直觉接到完整工程实现上。
+3. 再读 `README.md` 和 `Client.java`，把入门直觉接到完整工程实现上；
+4. 去 [practice/](practice/README.md) 找一道用到它的题，**先自己做，再看答案**。
 
 23 篇入门文档统一遵循 [08-beginner-teaching-template.md](08-beginner-teaching-template.md) 的八段式结构。
 

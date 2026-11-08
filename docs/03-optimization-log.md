@@ -5,6 +5,8 @@
 > 全部数据来自 `javac` / `java` 实测，未做估算。
 >
 > **2026-10-27 说明**：本文记录的是「22 → 23 种模式」那一轮重构，文件数与行数是当时基线。之后项目新增了 23 个入门 Demo、23 份 `BEGINNER.md` 与两个组合案例；当前规模（310 文件 / 35614 行 / 558 class）见 [09-beginner-refactor-report.md](09-beginner-refactor-report.md) 与根 README。
+>
+> **2026-11-08 说明**：那轮新增的 `build.bat` / `build.sh` 已删除，项目改用标准 `javac` / `java`（见根 README）。下文提到这两个脚本处仅作历史记录。
 
 ## 0. 总览
 
@@ -16,7 +18,7 @@
 | 编译产物 class 数 | — | **326** | — |
 | 编译告警 | 未记录 | **0**（`-Xlint:all`） | — |
 | 包命名 | `creationtype` / `structuraltype` / `BehaviorType` / `CombineApplicationExamples` | `com.patterns.creational` / `structural` / `behavioral` / `combined` + `util` | 全小写 |
-| 构建方式 | 仅 IntelliJ `.iml` | `build.bat` / `build.sh` + 直接 `javac` | 零依赖 |
+| 构建方式 | 仅 IntelliJ `.iml` | 直接 `javac` 编译（零依赖） | 无需 IDE |
 | 学习文档 | 0 份 | **24 份 README，合计 89964 行**（另加顶层 README 与 5 份 docs） | +24 |
 | 组合应用 | 9 文件 217 行 | **20 文件 3547 行** | 重写并加旧实现对照 |
 
@@ -31,7 +33,7 @@
 | G3 | 可见性放开 | `Folder`、`Order`、4 个状态类等 package-private | 全部 `public`（或 `sealed` + `permits`） | 教学项目要让学习者能在 `Client` 之外复用 |
 | G4 | Javadoc 标准化 | `@ClassName/@Package/@Author/@Create` 自定义标签 | 标准 `@author`/`@since`/`@param`/`@return`/`@throws` | 自定义标签无法被 IDE 与 `javadoc` 识别 |
 | G5 | 每模式一份 README | 无 | 24 份，统一九大模块 | 代码只能说明「怎么写」，说明不了「为什么」 |
-| G6 | 根 README + 构建脚本 | 无 | `README.md` + `build.bat` / `build.sh` | 原项目无法脱离 IDEA 运行 |
+| G6 | 根 README | 无 | `README.md`（含 `javac` / `java` 编译运行说明） | 原项目无法脱离 IDEA 运行 |
 | G7 | 新增 `util` 包 | 各模块自己拼金额/宽度字符串 | `Money`（金额格式与舍入）、`DisplayWidth`（中文宽度对齐） | 输出对齐与金额精度在各模式中重复出现，抽出来才能保证一致 |
 
 ## 2. 逐模块台账
@@ -154,3 +156,97 @@
 | 文档一致性 | 24 份 README 的文件行数、类数量、输出片段均与源码实测对齐；全项目 30 个 md 的围栏全偶数、155 条相对链接与 493 条页内锚点均 0 失效 |
 
 完整数据见 [05-verification.md](05-verification.md)。
+
+---
+
+## 8. 第三轮改造（2026-11-08）：从「能读懂」到「能推导」
+
+前两轮解决的是「有没有」、「对不对」。这一轮解决的是一个问题：
+
+> **23 个 Demo 都跑得通、25 份文档都齐全，但读完的人仍然不知道：拿到一个真实需求时该用哪个。**
+
+### 8.1 改动全表
+
+| # | 改动 | 类别 | 教学/工程价值 |
+|---|---|---|---|
+| 1 | 删除 `build.bat` / `build.sh` | 结构精简 | 项目不需要养一套构建体系；脚本本身就是上一轮一个 bug 的温床 |
+| 2 | 清理 23 处脚本引用 | 一致性 | 文档提到的命令必须能真的执行 |
+| 3 | 重写 [07](07-composition-vs-inheritance.md) §0 | **理论纠错** | 原文把 21 个模式全说成「组合变体」，不准确。改为四分类（继承为主 3 / 组合委托为主 10 / 用组合但意图不是组合 6 / 归不进去 4） |
+| 4 | 新增 [10-uml-atlas.md](10-uml-atlas.md) | 可视化 | 全项目原本 Mermaid 图为 0；现在 27 张图 + 图-代码对照索引 |
+| 5 | 新增 [pattern-selection-guide.md](pattern-selection-guide.md) | **能力主线** | 回答「如何从业务需求推导设计」，而不是「模式定义背下来」 |
+| 6 | 新增 `docs/practice/`（5 题 + 5 实现） | **能力主线** | 第一次把「先想再看答案」写进项目 |
+| 7 | 新增 [docs/README.md](README.md) | 导航 | `docs/` 从 11 份增到 18 份，必须有入口 |
+| 8 | 根 README 补「三层学习」「设计能力路线」 | 导航 | 把 BEGINNER / README 的分工写成表，而不是「长短不同」 |
+| 9 | 修正 `02` 的 `Client2` 失效引用 | 一致性 | 指向了不存在的类 |
+| 10 | 统一统计口径 | 一致性 | 行数 = 换行符个数（不含末尾空行），并在 README 里显式声明 |
+
+### 8.2 三个关键判断（做了什么 / 刻意没做什么）
+
+#### 判断一：不重写 orderservice 与 apigateway
+
+审查结论：两个案例**已经是真正的模式协作**，不是 Demo 堆叠。
+
+- `orderservice` 有 4 个明确接缝：策略↔责任链（链节点问策略）、装饰器↔策略（Capped 包住单个算法）、条件↔策略（Requirement 与 DiscountPolicy 分开）、工厂↔全部；
+- `apigateway` 有 6 个接缝：链↔策略、链↔装饰器、状态↔观察者、享元↔策略、工厂↔链装配、统一响应包装。
+
+所以只给它们补了 UML 与时序图（[10-uml-atlas.md](10-uml-atlas.md) §四），**没有重写业务代码**。重复开发已有的、已经正确的代码是浪费。
+
+#### 判断二：不新增「Java 后端专题」
+
+任务书第 9 项要求覆盖 JDK / Spring / MyBatis / Netty。审查后发现 [06-modern-scenarios.md](06-modern-scenarios.md)（约 3000 行）**已经完整覆盖**：Spring `BeanPostProcessor` 四阶段、Netty `ChannelPipeline` 双向规则、MyBatis「代理套链」两层结构。
+
+再写一份只会造成两份文档说法不一。**正确做法是把它接入导航**，于是根 README 与 [docs/README.md](README.md) 都指向它。
+
+#### 判断三：练习题只做 5 个，且刻意保留「不需要模式」的答案
+
+5 个题里有 **3 个的正确答案包含「这里不该用模式」**：
+
+| 练习 | 反模式结论 |
+|---|---|
+| 02 状态流转 | 状态多、规则常改、无副作用时，**查表比状态模式好** |
+| 04 文件导出 | 门槛阈值、列定义这类**数据不该变成类** |
+| 05 请求管线 | 三步固定时，**直接顺序调用三个方法就够了** |
+
+这是刻意设计。只教「什么时候用」的项目会制造过度设计者；同时教「什么时候不用」才能培养判断力。
+
+### 8.3 本轮新增了什么数字
+
+| 项 | 第二轮 | 第三轮 | 变化 |
+|---|---|---|---|
+| Java 源文件（`src/`） | 310 | 310 | **无变化** |
+| `src/` 代码行数 | 35614 | 35614 | **无变化** |
+| 练习参考实现 | 0 | 5 个文件 / 2028 行 | +5 |
+| Markdown 文件 | 58 | 67 | +9 |
+| Markdown 行数 | 109335 | 114077 | +4742 |
+| Mermaid 图 | 0 | 40 | +40 |
+| 编译结果 | 0 错 0 告警 | 0 错 0 告警 | 保持 |
+| 25 个入口 | 全部 exit=0 | 全部 exit=0 | 保持 |
+
+关键数字：**`src/` 一行没改**。这一轮的产出全部在「怎么教」与「怎么练」，不在「有什么代码」。
+
+### 8.4 本轮踩到的真实坑
+
+保留记录，因为它们本身就是教学内容：
+
+| 坑 | 表现 | 原因 | 修正 |
+|---|---|---|---|
+| 链装配覆盖 | 五节点链只剩首尾两个，日志里「会员九折」消失 | `linkTo()` 返回 `this`，而装配写成了 `cursor = cursor.linkTo(next)` | 拆成两步：先 `linkTo`，再 `cursor = next` |
+| 折扣按原价算 | 300 元打九折减了 32 而非 30 | 旧签名只收 `Order`，内部读 `order.money()`（原价） | 签名改为 `discount(BigDecimal price, Order)` |
+| 封顶做假 | 往链里塞一个返回 0 的节点假装封顶 | 搞混了「单算法上限」和「整链上限」 | `DiscountChain` 持仓 `cap`，跑完再截断 |
+| `EnumMap` 编译失败 | `EnumMap<>(OrderState.class)` 报错 | `EnumMap` 的 key 必须是 enum，而 `OrderState` 是接口 | 改 `LinkedHashMap` |
+| 接口静态方法 | `valid(...)` 报「找不到符号」 | 接口静态方法不被实现类继承 | 写全名 `DiscountPolicy.valid(...)` |
+| PowerShell 输出乱码 | 中文全变 `?` | `>` 重定向会先解码（GBK）再编码（UTF-8） | 用 .NET Process 接管 stdout，固定 UTF-8 |
+| `-D` 参数被拆 | `ClassNotFoundException: /encoding=UTF-8` | PowerShell 按空格拆参数 | 加引号：`java "-Dstdout.encoding=UTF-8" ...` |
+
+前三个坑直接写进了练习 01 的「为什么不选其他模式」与「坑点单独说」段；后四个进了 [05-verification.md §10.3](05-verification.md)。
+
+### 8.5 仍未做（有意为之）
+
+| 项 | 为什么不做 |
+|---|---|
+| 新增 `LICENSE` 文件 | 授权是作者的决定。已在根 README「许可」节给出 MIT / Apache-2.0 / CC BY-NC-SA 三选一的分析与推荐，**等作者拍板** |
+| 给 25 份模块 README 都翻新一遍 | 多数已经达标。为了「看起来改了很多」而重写，会把已有价值弄丢 |
+| 给每个模式都补时序图 | 只有「对象协作复杂」的模式需要时序图（链、观察者、组合案例）。给单例画时序图只是凑数 |
+| 引入 Maven / JUnit / CI | 项目定位就是纯 Java。增加构建工具会把学习者的注意力从设计模式转到工具上 |
+
+完整验证数据见 [05-verification.md §10](05-verification.md)。

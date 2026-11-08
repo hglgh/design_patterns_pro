@@ -11,6 +11,15 @@
 
 **全部落点都可以在本地 JDK 与开源代码里核对**，没有一个是「据说」。
 
+> **本文在整条学习路径上的位置**：
+> - 想知道「为什么这么设计」→ 各模式目录的 `BEGINNER.md`
+> - 想知道「拿到需求该选哪个」→ [pattern-selection-guide.md](pattern-selection-guide.md)
+> - 想知道「在真实框架里它长什么样」→ **本文**
+> - 想自己动手推一遍 → [practice/](practice/README.md)
+>
+> 阅读顺序建议：先学完对应模式的 `README.md`，再回到本文看它在 JDK / Spring / MyBatis / Netty 里的实现。
+> 反过来（先看框架源码再看模式）容易只记住类名，得不到设计动机。
+
 ---
 
 ## 如何使用本文

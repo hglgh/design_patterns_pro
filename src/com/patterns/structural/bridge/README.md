@@ -1101,7 +1101,7 @@ new SalesReport(new PdfExporter()).generate();
 ### 10.2 运行方式
 
 ```bash
-build.bat
+# 先在项目根目录完成全量编译（见根 README「快速开始」），再运行：
 java -cp out com.patterns.structural.bridge.Client
 
 # 或只编译本目录

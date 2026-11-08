@@ -852,7 +852,7 @@ public final class ComponentType<T> {
 ### 10.2 运行方式
 
 ```bash
-build.bat
+# 先在项目根目录完成全量编译（见根 README「快速开始」），再运行：
 java -cp out com.patterns.creational.abstractfactory.Client
 
 # 或只编译本目录

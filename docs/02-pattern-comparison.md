@@ -3,6 +3,11 @@
 > 学习的最大障碍不是「某个模式不懂」，而是**两个模式看起来一样**。
 > 本文只回答一件事：**遇到代码时，凭什么判断该用 A 而不是 B。**
 > 每个对比都配一条「判别三问」和本项目里的真实对照文件。
+>
+> **本文与 [选择指南](pattern-selection-guide.md) 的分工**：
+> - 这里答「**定义上**差在哪」（静态、概念层）；
+> - 选择指南 §4~§6 答「**同一个需求**为什么最后选了不同模式」（动态、决策层）。
+> - 想看两个模式在类图上长得有什么区别：见 [10-uml-atlas.md](10-uml-atlas.md)。
 
 ## 如何使用本文
 
@@ -65,7 +70,7 @@
 **本项目对照**：
 
 - 建造者：[`ComputerBuilder`](../src/com/patterns/creational/builder/ComputerBuilder.java)（抽象）+ `GamingComputerBuilder` / `OfficeComputerBuilder`（具体）+ [`Director`](../src/com/patterns/creational/builder/Director.java)（固定组装顺序）
-- `Client` 与 `Client2` 展示了**带 Director** 和**不带 Director** 两种用法 —— 后者就是纯链式写法
+- [`Client`](../src/com/patterns/creational/builder/Client.java) 用一个文件分三段对照：`--- 方式 1 ---` 带 `Director` 固定组装顺序，`--- 方式 2 ---` 纯链式（`Computer.builder()...build()`）不带 `Director`，`--- 方式 3 ---` 演示 `build()` 里的必填校验
 
 **关键判断**：如果参数只有 2-3 个，写个构造器，不要写 Builder。**Builder 的价值在「可选参数多 + 校验集中在 `build()`」**，不在「看起来专业」。
 
