@@ -406,7 +406,7 @@ sequenceDiagram
 
 ## 10. 参考实现
 
-完整可运行代码：[`solutions/OrderDiscountSolution.java`](solutions/OrderDiscountSolution.java)（约 660 行，含改造前对照实现与边界验证）
+完整可运行代码：[`solutions/OrderDiscountSolution.java`](solutions/OrderDiscountSolution.java)（约 720 行，含改造前对照实现与边界验证）
 
 ```bash
 java docs/practice/solutions/OrderDiscountSolution.java
@@ -435,7 +435,21 @@ interface DiscountPolicy {
 **两个容易写错的地方**（参考实现里都有反向注释）：
 
 1. **「满 100」只能在一个地方判。** 以前 `FullReduction` 自己存一份 `threshold`、`Requirement.atLeast` 又存一份，两边用的价还不一样，于是会出现「日志说命中、实际减 0」。现在 `FlatReduction` 只返回一个金额，一个满减券 = `条件(满100) + 算法(减20)`，是两个对象；
-2. **配置错误必须在装配期炸。** `Percentage` 限定 `(0, 1)`、`FlatReduction` / `Capped` / 整链 `cap` / `Requirement` 门槛拒绝负数 —— 全部在构造器里抛 `IllegalArgumentException`，不会流到算钱时变成一个怪数。主程序最后有 6 条 `reject(...)` 现场演示。
+2. **配置错误必须在装配期炸。** `Percentage` 限定 `(0, 1)`、`FlatReduction` / `Capped` / 整链 `cap` / `Requirement` 门槛拒绝负数 —— 全部在构造器里抛 `IllegalArgumentException`，不会流到算钱时变成一个怪数。主程序里有 6 条 `reject(...)` 现场演示。
+
+**主程序末尾的边界清单**（运行参考实现可以直接对照这 7 组输出）：
+
+| # | 场景 | 预期输出 | 证明了什么 |
+|---|---|---|---|
+| 1 | 订单 120，先减 30，再问「满 100」 | 当前价 90.00 vs 原价 70.00 | 门槛口径必须显式选 |
+| 2 | 150 元订单，两种装配顺序 | 117.00 vs 115.00 | 顺序是配置项，不是实现细节 |
+| 3 | 6 条非法参数（比例 / 负数 / 封顶 / 门槛） | 构造期全部拒绝 | 错误不会流进计算 |
+| 4 | 门槛刚好踩线（当前价 == 100） | 命中，应付 80.00 | 等号属于「满」，写在 `>=` 里 |
+| 5 | 券面值 110 > 订单 30 | 应付 0.00，日志可见兑底 | 价格只减不增、永不为负 |
+| 6 | 积分 8 元超单算法封顶 3；券面值 200 超整单封顶 50 | 减 3.00；应付 150.00 | 两种封顶各管一段 |
+| 7 | 策略在运行期返回负数 | `IllegalStateException` 当场拦截 | 构造期管参数，运行期 `valid` 管返回值 |
+
+其中第 5 条的兑底不在策略里，而在 `ChainState.apply`：每一步都做 `reduction.min(price)`。这是「订单金额不会增加、也不会变负」的唯一保证点，所有策略都只需要遵守「返回非负减免」这一条契约。
 
 关键片段（链装配 —— 这里有一个曾经踩过的坑）：
 

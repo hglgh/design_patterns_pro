@@ -611,6 +611,64 @@ public final class OrderDiscountSolution {
                 .cap("-1"));
         reject("负数门槛", () -> Requirement.atLeast("-100"));
         System.out.println("以上全部在构造 / 装配阶段失败，不会流到计算里变成负数或 NaN 式的怪结果。");
+        System.out.println();
+
+        System.out.println("=== 边界四：门槛刚好踩线 —— 等号属于「满」 ===");
+        Order edge = new Order(new BigDecimal("100.00"), false, false, 0);
+        BigDecimal exact = DiscountChain.builder()
+                .stage("满 100 减 20", new FlatReduction(new BigDecimal("20")), Requirement.atLeast("100"))
+                .build().calculate(edge).price;
+        System.out.println("订单 100.00，「满 100 减 20」→ 命中，应付 " + exact.toPlainString());
+        System.out.println("  atLeast 写的是 >=，不是 >。边界值算不算「满足」落在 test 的实现里，不再靠注释约定。");
+        System.out.println();
+
+        System.out.println("=== 边界五：券面值超过当前价，兑底保证「只减不增、永不为负」 ===");
+        Order tiny = new Order(new BigDecimal("30.00"), false, false, 0);
+        ChainState floored = DiscountChain.builder()
+                .stage("立减 50", new FlatReduction(new BigDecimal("50")), Requirement.always())
+                .stage("再立减 60", new FlatReduction(new BigDecimal("60")), Requirement.always())
+                .build().calculate(tiny);
+        floored.log.forEach(System.out::println);
+        System.out.println("  订单 30.00，券面值合计 110.00 → 应付 " + floored.price.toPlainString());
+        System.out.println("  兑底在 ChainState.apply：每一步都 reduction.min(price)。价格单调递减，下限 0。");
+        System.out.println();
+
+        System.out.println("=== 边界六：两种封顶各管一段 ===");
+        BigDecimal afterPoints = DiscountChain.builder()
+                .stage("积分抵扣", new Capped(new PointsDeduction(new BigDecimal("0.01"), 500), "3"),
+                        Requirement.hasPoints(1))
+                .build().calculate(new Order(new BigDecimal("100.00"), false, false, 800)).price;
+        System.out.println("积分 800 × 0.01 = 8.00，单算法封顶 3.00 → 实际减 "
+                + new BigDecimal("100.00").subtract(afterPoints).toPlainString());
+        ChainState overCapped = DiscountChain.builder()
+                .stage("立减 100", new FlatReduction(new BigDecimal("100")), Requirement.always())
+                .stage("再立减 100", new FlatReduction(new BigDecimal("100")), Requirement.always())
+                .cap("50")
+                .build().calculate(new Order(new BigDecimal("200.00"), false, false, 0));
+        overCapped.log.forEach(System.out::println);
+        System.out.println("  订单 200.00，券面值合计 200.00，整单封顶 50 → 应付 " + overCapped.price.toPlainString());
+        System.out.println("  Capped 管单个算法，链上的 cap 管总账；两层都在日志里留了痕迹。");
+        System.out.println();
+
+        System.out.println("=== 边界七：策略在运行期返回负数，链节点当场拦截 ===");
+        DiscountPolicy broken = new DiscountPolicy() {
+            public String name() {
+                return "坏策略";
+            }
+
+            public BigDecimal discount(BigDecimal price, Order order) {
+                return BigDecimal.ONE.negate();
+            }
+        };
+        try {
+            DiscountChain.builder()
+                    .stage("坏策略", broken, Requirement.always())
+                    .build().calculate(new Order(BigDecimal.TEN, false, false, 0));
+            System.out.println("  未拦截（错误）：负数返回值流进了价格");
+        } catch (IllegalStateException e) {
+            System.out.println("  拦截 → " + e.getMessage());
+        }
+        System.out.println("  构造期校验管参数，运行期 valid 管返回值：两层各拦一类错。");
     }
 
     /** 同一张订单、同一个「满 100」，只换门槛口径，看结果差多少。 */
