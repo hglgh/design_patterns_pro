@@ -45,21 +45,23 @@
 | 结构型 7 | [适配器](src/com/patterns/structural/adapter/BEGINNER.md) · [桥接](src/com/patterns/structural/bridge/BEGINNER.md) · [组合](src/com/patterns/structural/composite/BEGINNER.md) · [装饰器](src/com/patterns/structural/decorator/BEGINNER.md) · [外观](src/com/patterns/structural/facade/BEGINNER.md) · [享元](src/com/patterns/structural/flyweight/BEGINNER.md) · [代理](src/com/patterns/structural/proxy/BEGINNER.md) |
 | 行为型 11 | [责任链](src/com/patterns/behavioral/chainofresponsibility/BEGINNER.md) · [命令](src/com/patterns/behavioral/command/BEGINNER.md) · [解释器](src/com/patterns/behavioral/interpreter/BEGINNER.md) · [迭代器](src/com/patterns/behavioral/iterator/BEGINNER.md) · [中介者](src/com/patterns/behavioral/mediator/BEGINNER.md) · [备忘录](src/com/patterns/behavioral/memento/BEGINNER.md) · [观察者](src/com/patterns/behavioral/observer/BEGINNER.md) · [状态](src/com/patterns/behavioral/state/BEGINNER.md) · [策略](src/com/patterns/behavioral/strategy/BEGINNER.md) · [模板方法](src/com/patterns/behavioral/templatemethod/BEGINNER.md) · [访问者](src/com/patterns/behavioral/visitor/BEGINNER.md) |
 
-## 项目规模（2026-11-08 实测）
+## 项目规模（2026-11-08 第五轮实测）
 
 | 指标 | 数值 |
 |---|---|
 | 模式覆盖 | 23 种 GoF 模式 + 2 个组合示例（orderservice 四模式 / apigateway 六模式） |
 | Java 源文件 | **310**（`src/` 下，含 `util` 工具包 2 个、23 个入门 Demo） |
 | 工程代码行数 | **35614**（仅 `src/`，物理行） |
-| 练习参考实现 | **5** 个单文件（`docs/practice/solutions/`，合计 2028 行，均可 `java Xxx.java` 直接跑） |
-| 学习文档 | **67** 份 md、**114331** 行：25 份模块 README + 23 份 BEGINNER + 19 份项目级文档 |
+| 练习参考实现 | **5** 个单文件（`docs/practice/solutions/`，合计 **2203** 行，均可 `java Xxx.java` 直接跑） |
+| 学习文档 | **67** 份 md、**114500** 行：25 份模块 README + 23 份 BEGINNER + 19 份项目级文档 |
 | 可视化 | **40** 张 Mermaid 图：UML 图谱 27 张（25 类图 + 2 时序图）、选择指南 3 张决策图、练习题 10 张（类图 / 时序图 / 流程图） |
 | 编译产物 | **558** 个 class，`javac --release 25 -Xlint:all` **0 错误 0 告警** |
 | 运行验证 | **25** 个工程入口全部退出码 0，stderr **0 行**，stdout 合计 **2531** 行 |
-| 文档审计 | **725** 条相对链接全部命中，**失效 0**，围栏全偶数 |
+| 文档审计 | **733** 条相对链接全部命中，**失效 0**，围栏全偶数 |
 
 > 统计口径：文件数 = 递归枚举结果；行数 = **换行符个数**（文件末尾没有换行时补 1）。即每个换行符结束一行，不在末尾额外补空行；反过来说，程序输出里**故意打印的空行也算一行**，这也是 25 个入口合计 2531 行（而不是 2526）的原因。
+>
+> 三个时点（第三轮 / 第四轮 / 第五轮）的同一口径快照见 [docs/05-verification.md §2.7](docs/05-verification.md)；历史上出现过的 114077 / 114331 / 710 / 725 都是**当时**的值，不是当前值。
 > 完整验证数据见 [docs/05-verification.md](docs/05-verification.md)。
 
 ## 快速开始

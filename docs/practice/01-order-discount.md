@@ -148,7 +148,7 @@ v5 要「积分单券最多抵 3 元」时我要改：
 |---|---|---|
 | 1 | 「加一种券」属于哪个盒子？ | **策略**。不是"规则"——规则变的是数字，加券变的是种类数。 |
 | 2 | 「门槛从 100 改成 120」属于哪个盒子？ | **规则**。如果为了这个去加类，就是过度设计。 |
-| 3 | 满减的 100 比较的是原价还是当前价？ | 原价（`order.money()`）。但运营以为是当前价 —— 这就是 v5 的 bug 根源。 |
+| 3 | 满减的 100 比较的是原价还是当前价？ | **当前价**（循环里的 `price` 已经减过前面的券）。但代码里没有任何一行写下这个约定，运营默认是原价 —— 这个没人定义的约定，才是 v5 的 bug 根源。 |
 | 4 | 「查到每张券为什么没生效」需要什么？ | 需要一个**能表达"跳过原因"的返回值**。boolean 不够，必须是要么"命中 + 金额"、要么"跳过 + 原因"的二元结果。 |
 | 5 | 「同组二选一」是券的属性还是链的属性？ | **链的属性**。券不该知道自己和谁互斥（否则加一张券要改所有券）。 |
 | 6 | 「积分单券最多抵 3 元」和「总减免上限 50 元」是同一件事吗？ | **不是**。前者是"某个算法的上限"，后者是"整条链的上限"。混为一谈就会写出「每张券都封顶了，叠起来还是减了 200」。 |
@@ -186,7 +186,7 @@ v5 要「积分单券最多抵 3 元」时我要改：
 | v4 查跳过原因 | 返回值语义 | 二元结果（命中/跳过 + 原因） | 加一个 `lastSkipReason` 字段 |
 | v4 积分单券封顶 | 策略装饰 | 装饰器包住"积分"这一个算法 | 在链上塞一个"封顶节点" |
 | v5 顺序可配 | 装配 | Builder 按配置表装配 | 让券自己排序 |
-| v5 顺序敏感 bug | **事实层面的缺失** | 明确"门槛用当前价"并写进文档 | 靠"大家都知道"来维持 |
+| v5 顺序敏感 bug | **事实层面的缺失** | 明确「门槛用当前价」，并写进签名 `test(Order, currentPrice)` | 靠"大家都知道"来维持 |
 
 **最关键的一行**：v5 的 bug 不属于任何一种"加需求"，它属于**原来的代码从来没有定义过"门槛按哪个价算"**。这类问题不能靠加模式解决，只能靠把隐含约定变成显式规则 + 测试。
 
@@ -202,8 +202,18 @@ v5 要「积分单券最多抵 3 元」时我要改：
 两者的变化频率差一个数量级，所以拆开：
 
 ```java
-interface Requirement { boolean test(Order order); String describe(); }
-interface DiscountPolicy { String name(); BigDecimal discount(BigDecimal price, Order order); }
+interface Requirement {
+    // 条件既要看订单事实（会员/周末/积分），也要看「减到现在的价」。
+    // 「满 100」跟哪个价比，写在签名里，不写在注释里。
+    boolean test(Order order, BigDecimal currentPrice);
+    String describe();
+}
+
+interface DiscountPolicy {
+    String name();
+    // 算法只回答「减多少」：不判门槛，也不重复校验自己的返回值。
+    BigDecimal discount(BigDecimal price, Order order);
+}
 ```
 
 为什么 `discount` 要收 `price` 而不是只收 `Order`？
@@ -253,13 +263,33 @@ classDiagram
     }
     class Requirement {
         <<interface>>
-        +test(Order) boolean
+        +test(Order, BigDecimal currentPrice) boolean
         +describe() String
     }
     class DiscountPolicy {
         <<interface>>
         +name() String
         +discount(BigDecimal price, Order) BigDecimal
+    }
+    class FlatReduction {
+        <<record>>
+        +BigDecimal amount
+    }
+    class Percentage {
+        <<record>>
+        +BigDecimal rate
+    }
+    class PointsDeduction {
+        <<record>>
+        +BigDecimal perPoint
+        +int maxPoints
+    }
+    class Capped {
+        -DiscountPolicy delegate
+        -BigDecimal cap
+    }
+    class Traced {
+        -DiscountPolicy delegate
     }
     class Decision {
         <<record>>
@@ -291,25 +321,36 @@ classDiagram
         +calculate(Order) ChainState
     }
 
-    Requirement ..> Order : 读
-    DiscountPolicy ..> Order : 读
-    DiscountPolicy ..> Decision : 折算结果
-    DiscountHandler --> Decision : 产出
+    DiscountPolicy <|.. FlatReduction
+    DiscountPolicy <|.. Percentage
+    DiscountPolicy <|.. PointsDeduction
+    DiscountPolicy <|.. Capped
+    DiscountPolicy <|.. Traced
+    Capped --> DiscountPolicy : delegate
+    Traced --> DiscountPolicy : delegate
+
+    Requirement ..> Order : 读事实
+    DiscountPolicy ..> Order : 读事实
+    DiscountHandler --> Decision : decide() 返回
     DiscountHandler --> ChainState : 读写
     DiscountHandler <|-- PolicyNode
     DiscountHandler <|-- ExclusiveNode
     DiscountHandler --> DiscountHandler : next
-    PolicyNode --> DiscountPolicy : 委托
+    PolicyNode --> DiscountPolicy : 委托算钱
     PolicyNode --> Requirement : 先问条件
-    ExclusiveNode --> DiscountPolicy : 委托
+    ExclusiveNode --> DiscountPolicy : 委托算钱
+    ExclusiveNode --> Requirement : 先问条件
     DiscountChain o-- DiscountHandler : head（Builder 装配后传入）
-    DiscountChain ..> Requirement : Builder 装配
+    DiscountChain ..> ChainState : calculate() 新建
 ```
 
 **读图要点**：
 
 - `DiscountHandler` 持有 `next`（自关联）—— 链的形状；
-- `PolicyNode` **同时**依赖 `DiscountPolicy` 和 `Requirement` —— 这是"策略"和"链"的接缝；
+- `PolicyNode` / `ExclusiveNode` **同时**依赖 `DiscountPolicy` 和 `Requirement` —— 这是"策略"和"链"的接缝；
+- `Requirement` 收 `currentPrice`：条件既能读订单事实（`member()`），也能读「减到现在的价」，**门槛按哪个价算由装配时选的实现决定，不由注释约定**；
+- `Capped` / `Traced` 既是 `DiscountPolicy`（`..|>`）又持有被装饰者（`-->`），这是装饰器在类图上的典型双线；3 个 `record` 是叶子算法；
+- `DiscountPolicy` **不依赖** `Decision` —— 它只返回一个金额，包不包装成「命中 / 跳过」是链节点的事（本题上一版图里画过这条线，是错的，已删）；
 - `DiscountChain` 用聚合（`o--`）持有 head：节点由 `Builder` 创建并 `linkTo` 串好，再作为参数传进 `DiscountChain` —— 链对象只负责「从哪进、整体封顶」，不负责节点的生与死，所以不是组合（`*--`）；
 - `Requirement` 和 `DiscountPolicy` 都没有指向 `Order` 以外的依赖 —— 它们可以被单测。
 
@@ -329,55 +370,72 @@ sequenceDiagram
     Chain->>S: new ChainState(order)
     Note over S: price = 320.00
     Chain->>N1: process(state)
-    N1->>N1: requirement.atLeast(100).test → true
-    N1->>N1: policy.discount(320.00) → 20
-    N1->>S: apply("满减", 20)
+    N1->>N1: requirement.test(order, 320.00) → true
+    N1->>N1: policy.discount(320.00, order) → 20.00
+    Note over N1: 返回值过 DiscountPolicy.valid
+    N1->>S: apply("满减", 20.00)
     Note over S: price = 300.00
     N1->>N2: next.process(state)
     N2->>S: usedGroups.contains("折扣券")? → false
-    N2->>N2: memberOnly().test → true
+    N2->>N2: requirement.test(order, 300.00) → true（仅会员）
+    N2->>N2: policy.discount(300.00, order) → 30.00
     N2->>S: usedGroups.add("折扣券")
-    N2->>N2: policy.discount(300.00) → 30.00
     N2->>S: apply("会员九折", 30.00)
     Note over S: price = 270.00
     N2->>N3: next.process(state)
     N3->>S: usedGroups.contains("折扣券")? → true
     N3->>S: log "跳过（组已占用）"
     N3->>N4: next.process(state)
-    N4->>N4: discount(270.00) → 3.00（Capped 封顶）
+    N4->>N4: requirement.test(order, 270.00) → true（积分 ≥ 1）
+    N4->>N4: Capped(积分).discount(270.00, order) → 8.00 → min(3) → 3.00
     N4->>S: apply("积分抵扣", 3.00)
     Note over S: price = 267.00
     N4-->>Chain: 链结束
-    Chain->>Chain: 总减免 53 > cap 50 → 截断
+    Chain->>Chain: 总减免 53.00 > cap 50 → 截断
     Note over Chain: price = 270.00
     Chain-->>C: ChainState
 ```
 
-**注意两组数字**：
+**注意三组数字**：
 
 - 会员九折按 **300.00** 算，不是按 320.00 算 → 减 30.00 而不是 32.00；
-- 总减免 53.00 超过上限 50 → 最终付 **270.00**，和改造前的 `before()` 一致。
+- 总减免 53.00 超过上限 50 → 最终付 **270.00**，和改造前的 `before()` 一致；
+- 每个节点的门槛都拿**当前价**去比（320 → 300 → 270）。本例三种价都 ≥ 100，所以看不出差别；真正会分叉的是「原价 120、先减 30」那种订单 —— 参考实现里 `atLeast`（当前价）与 `atLeastOriginal`（原价）并排给出，运行后能直接看到 90.00 vs 70.00。
 
 行为一致，但每条路径都可查、可配、可单测。
 
 ## 10. 参考实现
 
-完整可运行代码：[`solutions/OrderDiscountSolution.java`](solutions/OrderDiscountSolution.java)（约 480 行，含改造前对照实现）
+完整可运行代码：[`solutions/OrderDiscountSolution.java`](solutions/OrderDiscountSolution.java)（约 660 行，含改造前对照实现与边界验证）
 
 ```bash
 java docs/practice/solutions/OrderDiscountSolution.java
 ```
 
-关键片段（`DiscountPolicy` 的签名，这是修复 v5 bug 的核心）：
+关键片段（`Requirement` + `DiscountPolicy` 的签名，这是修复 v5 bug 的核心）：
 
 ```java
+interface Requirement {
+    /** currentPrice 是当前价；「满 100」到底比哪个价，由实现决定，但必须写在签名里。 */
+    boolean test(Order order, BigDecimal currentPrice);
+    String describe();
+}
+
 interface DiscountPolicy {
     String name();
 
-    /** price 是当前价（前面节点减过的价），不是订单原价。 */
+    /** price 是当前价（前面节点减过的价），不是订单原价。算法不判门槛，只回答「减多少」。 */
     BigDecimal discount(BigDecimal price, Order order);
+
+    /** 所有实现的返回值都从这里过一道：null / 负数 / 未对齐到分。 */
+    static BigDecimal valid(BigDecimal value, String who) { ... }
 }
 ```
+
+**两个容易写错的地方**（参考实现里都有反向注释）：
+
+1. **「满 100」只能在一个地方判。** 以前 `FullReduction` 自己存一份 `threshold`、`Requirement.atLeast` 又存一份，两边用的价还不一样，于是会出现「日志说命中、实际减 0」。现在 `FlatReduction` 只返回一个金额，一个满减券 = `条件(满100) + 算法(减20)`，是两个对象；
+2. **配置错误必须在装配期炸。** `Percentage` 限定 `(0, 1)`、`FlatReduction` / `Capped` / 整链 `cap` / `Requirement` 门槛拒绝负数 —— 全部在构造器里抛 `IllegalArgumentException`，不会流到算钱时变成一个怪数。主程序最后有 6 条 `reject(...)` 现场演示。
 
 关键片段（链装配 —— 这里有一个曾经踩过的坑）：
 

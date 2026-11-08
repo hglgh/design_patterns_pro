@@ -38,6 +38,30 @@
 
 > 按这三条查一遍，**本项目 25 张类图里一条 `*--` 都不该有**——因为没有任何一个模式真的独占创建并封装了另一个对象。练习 [01](practice/01-order-discount.md) / [05](practice/05-api-request.md) 里原本各有一条 `*--`，按同一标准也已改成 `o--`（节点都是 Builder 装配后传入的）。这本身就是个结论：GoF 模式用组合，用的大多是「可替换」和「可独立存在」，不是「强拥有」。
 
+#### 0.1.2 三种「看起来像组合」的写法
+
+这三个东西在 Java 里都长着「A 和 B 有关系」的样子，但在 UML 里根本不是一种箭头：
+
+| 写法 | 项目里的例子 | 是对象组合吗 | 该画什么 |
+|---|---|---|---|
+| **静态嵌套类** | `Computer.Builder`（编译成 `Computer$Builder`） | 不是。只是把类型定义放进外部类的名字空间，`Computer` 没有 `Builder` 字段 | `..>`（创建 / 读取各一条） |
+| **静态字段引用** | `Order.state = PendingState.INSTANCE`、`EagerSingleton.INSTANCE` | 不是。实例在类初始化时创建唯一一份，所有宿主共享；宿主没了它还在 | 写在属性行，或画 `-->` |
+| **实例字段（对象组合）** | `PriceCalculator.strategy`、`Directory.children` | 是。每个宿主实例各持一份，随宿主创建 / 丢弃 | `-->`（单个）或 `o--`（一组） |
+
+判据只有一句：**「B 是不是 A 这个对象的部件」**。静态嵌套类答「不是，那是类型」；静态字段答「不是，那是全类共享的一份常量」；只有实例字段答「是」。
+
+#### 0.1.3 `o--` 与 `-->` 只差一件事：有没有「整体-部分」
+
+| 写法 | 判据 | 例子 |
+|---|---|---|
+| `o--` 聚合 | A 持有 B 的**一组**，且这组 B **构成 A 的内容**；B 由外部创建或可被外部引用，能独立存在 | `Workflow` 的 `roots`、`MacroCommand` 的 `commands`、`DocumentBundle` 的 `documents` |
+| `-->` 关联 | A 持有 B 的**一个**引用，或者 B 是**注册进来**的协作者，不是 A 的内容 | `Order.state`（可替换）、`ContentCreator.observers`（外部 `subscribe`） |
+
+两个边界例子，本项目按「能画 `-->` 就不画 `o--`、能画 `o--` 就不画 `*--`」的保守口径处理，并在图后写明理由：
+
+- `Order o-- HistoryEntry`：`history` 是 `List<HistoryEntry>`，条目由 `Order` 在做状态转移时创建、只服务这张订单的审计轨迹，形态上是聚合；但 `history()` 会把快照交给外部（日志 / 前端要看），**不满足「不对外泄漏」**，所以不升级成 `*--`。
+- `DispatchReport o-- Delivery`：报告是**值的快照**，里面的 `deliveries` 是 `List.copyOf` 复制来的引用；投递渠道本身由发布方创建、也被观察者共享，因此不可能是组合。
+
 ### 0.2 每个模式的图后面固定四行
 
 - **谁创建**：谁负责 `new`
@@ -97,7 +121,9 @@ classDiagram
 - **谁控制流程**：调用方 `getInstance()`，之后全是普通方法调用
 - **变化点**：换实现方式（饿汉 → DCL → 枚举）只改这一个类，调用方不动
 
-`StaticInnerClassSingleton` 与 `Holder` 的关系值得单独看：**外部类不持有实例，内部类才持有**，所以外部类加载时不会触发实例创建，这就是「懒加载 + 线程安全」同时成立的原因。
+`StaticInnerClassSingleton` 与 `Holder` 的关系值得单独看：**外部类不持有实例，内部类才持有**，所以外部类加载时不会触发实例创建，这就是「懒加载 + 线程安全」同时成立的原因。这也是图里把它画成 `..>`（首次调用触发类初始化）而不是持有关系的原因。
+
+`EagerSingleton` / `LazySingleton` / `DoubleCheckLockSingleton` 都把一个「自己的实例」放在 `static` 字段里，但图里没有画 `*--` 自环 —— **静态字段不是对象组合**：那一份实例在类初始化时创建、被全类共享，和任何「整体」都没有生命周期绑定（见 §0.1.2）。
 
 ### 2. 工厂方法 Factory Method
 
@@ -764,8 +790,8 @@ classDiagram
     WorkflowNode <|.. StepNode
     WorkflowNode <|.. SequenceNode
     WorkflowNode <|.. BranchNode
-    SequenceNode --> WorkflowNode : steps
-    BranchNode --> WorkflowNode : branches
+    SequenceNode o-- WorkflowNode : steps
+    BranchNode o-- WorkflowNode : branches
     Workflow o-- WorkflowNode : 根节点
     Workflow ..> DepthFirstIterator : 创建（默认）
     Workflow ..> BreadthFirstIterator : 创建（按顺序）
@@ -776,6 +802,8 @@ classDiagram
 - **谁持有**：迭代器持有遍历游标（栈或队列）；`FilteringIterator` 持有另一个迭代器
 - **谁控制流程**：`for (var n : workflow)` → `hasNext()` / `next()`，遍历算法全在迭代器里
 - **变化点**：加一种遍历顺序 = 新增一个 `Iterator` 实现；**`Workflow` 的内部结构（List）不需要对外暴露**
+
+> `Workflow`、`SequenceNode`、`BranchNode` 三者都持有一组子节点，所以都用 `o--`——和组合模式里的 `Directory o-- FileSystemNode` 是同一个形状。子节点由调用方创建、可以只挂在树上而不被任何容器独占，所以不是 `*--`；而迭代器本身不算「内容」，所以 `Workflow ..> DepthFirstIterator` 才是依赖。
 
 > `FilteringIterator` 是「迭代器装饰迭代器」：它不改变遍历顺序，只过滤元素。这个写法在 JDK 里对应 `Stream.filter()` 的惰性求值——图里 `delegate` 那条线就是「包一层」。
 >
@@ -1023,6 +1051,8 @@ classDiagram
 > `TransitionTable` 是刻意放在同一个包里的**反例**：它用一张查表处理同样的流转，代码更短、规则一眼可见，但表达不了「不同状态下同一动作含义不同」（比如 `PAY` 在待支付是付款，在已支付是重复支付）。什么时候该用状态模式、什么时候一张表就够，[state/README.md](../src/com/patterns/behavioral/state/README.md) §7 有逐项对比。
 >
 > `accept()` 里会回调 `order.issueTrackingNo()` 生成发货单号——**状态决定「做什么」，订单决定「编号怎么发」**。这条边界不分清，状态类就会慢慢长成一个 God Object。
+>
+> `Order.state` 画的是 `-->` 而不是 `*--`：五个状态都是 `enum` 的单例实例（`PendingState.INSTANCE`），**在类初始化时创建了唯一一份、被所有订单共享**。订单没有创建它们，也不会销毁它们 —— 这正是 §0.1.2 说的「静态字段引用」，不是对象组合。
 
 ### 21. 策略 Strategy
 

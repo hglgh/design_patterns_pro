@@ -39,15 +39,31 @@ public final class OrderDiscountSolution {
 
     // ==================== 二、规则：门槛会单独变 ====================
 
-    /** 使用条件。抽出来的唯一理由：门槛每周调，算法几个月不动。 */
+    /**
+     * 使用条件。抽出来的唯一理由：门槛每周调，算法几个月不动。
+     *
+     * <p><b>为什么 {@code test} 要收 {@code currentPrice}？</b>
+     * 「满 100」里的 100 到底和哪个价比，是业务决定，不是实现细节：
+     * 和原价比，用户先用了别的券就能「绕」过门槛；和当前价比，门槛随实付走。
+     * 把它放进签名，两种口径就必须在装配时明确选一个 —— 这正是 v5「差 2 元」的根治办法。</p>
+     */
     interface Requirement {
-        boolean test(Order order);
+        boolean test(Order order, BigDecimal currentPrice);
 
         String describe();
 
+        /** 门槛是数据不是行为：只校验「不能为负」，不换算、不抽象成类。 */
+        private static BigDecimal threshold(String text, String what) {
+            BigDecimal value = new BigDecimal(text);
+            if (value.signum() < 0) {
+                throw new IllegalArgumentException(what + " 不能为负：" + value.toPlainString());
+            }
+            return value;
+        }
+
         static Requirement always() {
             return new Requirement() {
-                public boolean test(Order order) {
+                public boolean test(Order order, BigDecimal currentPrice) {
                     return true;
                 }
 
@@ -59,7 +75,7 @@ public final class OrderDiscountSolution {
 
         static Requirement memberOnly() {
             return new Requirement() {
-                public boolean test(Order order) {
+                public boolean test(Order order, BigDecimal currentPrice) {
                     return order.member();
                 }
 
@@ -71,7 +87,7 @@ public final class OrderDiscountSolution {
 
         static Requirement weekendOnly() {
             return new Requirement() {
-                public boolean test(Order order) {
+                public boolean test(Order order, BigDecimal currentPrice) {
                     return order.weekend();
                 }
 
@@ -81,22 +97,51 @@ public final class OrderDiscountSolution {
             };
         }
 
+        /**
+         * 满 N：按<b>当前价</b>判断。
+         *
+         * <p>这是改造前 {@code before()} 原本的行为：它循环里的 {@code price} 是「已经减过前几张券的价」。
+         * 重构要保持外部行为不变，所以默认实现选当前价，而不是原价。</p>
+         */
         static Requirement atLeast(String threshold) {
-            BigDecimal min = new BigDecimal(threshold);
+            BigDecimal min = threshold(threshold, "门槛");
             return new Requirement() {
-                public boolean test(Order order) {
+                public boolean test(Order order, BigDecimal currentPrice) {
+                    return currentPrice.compareTo(min) >= 0;
+                }
+
+                public String describe() {
+                    return "当前价满 " + min.toPlainString();
+                }
+            };
+        }
+
+        /**
+         * 满 N：按<b>订单原价</b>判断，只用于对照。
+         *
+         * <p>它和 {@link #atLeast(String)} 在同一张订单上会给出不同答案 ——
+         * 「原价 120、先减 30 到 90」时，原价口径说「满 100」成立，当前价口径说「不成立」。
+         * 哪个才对是业务决定，代码的责任是<b>让它显式</b>。</p>
+         */
+        static Requirement atLeastOriginal(String threshold) {
+            BigDecimal min = threshold(threshold, "门槛");
+            return new Requirement() {
+                public boolean test(Order order, BigDecimal currentPrice) {
                     return order.money().compareTo(min) >= 0;
                 }
 
                 public String describe() {
-                    return "满 " + min.toPlainString();
+                    return "原价满 " + min.toPlainString();
                 }
             };
         }
 
         static Requirement hasPoints(int min) {
+            if (min < 0) {
+                throw new IllegalArgumentException("积分门槛不能为负：" + min);
+            }
             return new Requirement() {
-                public boolean test(Order order) {
+                public boolean test(Order order, BigDecimal currentPrice) {
                     return order.points() >= min;
                 }
 
@@ -113,6 +158,11 @@ public final class OrderDiscountSolution {
      *
      * <p>{@code price} 是<b>当前价</b>（前面节点减过的价），不是订单原价。
      * 传原价是这类系统最常见的一个 bug：九折会在第二张券之后又按原价算一遍。</p>
+     *
+     * <p><b>算法不判条件。</b>「满 100」由 {@link Requirement} 表达，
+     * 实现类只回答「减多少」。两边各判一次，就会出现「日志说命中、实际减 0」的矛盾。</p>
+     *
+     * <p>所有实现的返回值由链节点统一过 {@link #valid}，实现类自己不重复校验。</p>
      */
     interface DiscountPolicy {
         String name();
@@ -130,35 +180,76 @@ public final class OrderDiscountSolution {
         }
     }
 
-    record FullReduction(BigDecimal threshold, BigDecimal reduction) implements DiscountPolicy {
+    /**
+     * 固定金额减免（「减 20」这一步）。
+     *
+     * <p><b>它不看门槛。</b>「满 100」是 {@link Requirement} 的事 —— 这是本练习
+     * 最容易被写错的一处：原来这里又存了 {@code threshold} 又判了一次，
+     * 而 {@code Requirement.atLeast} 也在判，且两边用的价（当前价 / 原价）还不一样，
+     * 于是会出现「日志说命中、实际减 0」。把「满」搬出去后，
+     * 一个满减券 = {@code 条件(满100) + 算法(减20)}，是两个对象，不是一个。</p>
+     */
+    record FlatReduction(BigDecimal amount) implements DiscountPolicy {
+        FlatReduction {
+            if (amount == null) {
+                throw new IllegalArgumentException("立减金额不能为 null");
+            }
+            if (amount.signum() < 0) {
+                throw new IllegalArgumentException("立减金额不能为负：" + amount.toPlainString());
+            }
+        }
+
         public String name() {
-            return "满减";
+            return "立减 " + amount.toPlainString();
         }
 
         public BigDecimal discount(BigDecimal price, Order order) {
-            return price.compareTo(threshold) >= 0 ? reduction : BigDecimal.ZERO;
+            return amount;
         }
     }
 
+    /** 百分比折扣。{@code rate} 是<b>实付比例</b>：0.9 = 九折，必须落在 (0, 1) 开区间。 */
     record Percentage(BigDecimal rate) implements DiscountPolicy {
+        Percentage {
+            if (rate == null) {
+                throw new IllegalArgumentException("折扣比例不能为 null");
+            }
+            if (rate.signum() <= 0 || rate.compareTo(BigDecimal.ONE) >= 0) {
+                throw new IllegalArgumentException(
+                        "折扣比例必须在 (0, 1) 之间（0.9 = 九折）：" + rate.toPlainString());
+            }
+        }
+
         public String name() {
             return "百分比折扣";
         }
 
         public BigDecimal discount(BigDecimal price, Order order) {
-            BigDecimal off = price.multiply(BigDecimal.ONE.subtract(rate));
-            return DiscountPolicy.valid(off, name());
+            return price.multiply(BigDecimal.ONE.subtract(rate));
         }
     }
 
+    /** 积分抵扣。{@code perPoint} 必须为正，{@code maxPoints} 不得为负。 */
     record PointsDeduction(BigDecimal perPoint, int maxPoints) implements DiscountPolicy {
+        PointsDeduction {
+            if (perPoint == null) {
+                throw new IllegalArgumentException("每积分抵扣额不能为 null");
+            }
+            if (perPoint.signum() <= 0) {
+                throw new IllegalArgumentException("每积分抵扣额必须为正：" + perPoint.toPlainString());
+            }
+            if (maxPoints < 0) {
+                throw new IllegalArgumentException("可用积分上限不能为负：" + maxPoints);
+            }
+        }
+
         public String name() {
             return "积分抵扣";
         }
 
         public BigDecimal discount(BigDecimal price, Order order) {
             int usable = Math.min(order.points(), maxPoints);
-            return DiscountPolicy.valid(perPoint.multiply(BigDecimal.valueOf(usable)), name());
+            return perPoint.multiply(BigDecimal.valueOf(usable));
         }
     }
 
@@ -172,6 +263,9 @@ public final class OrderDiscountSolution {
         Capped(DiscountPolicy delegate, String cap) {
             this.delegate = delegate;
             this.cap = new BigDecimal(cap);
+            if (this.cap.signum() < 0) {
+                throw new IllegalArgumentException("封顶金额不能为负：" + this.cap.toPlainString());
+            }
         }
 
         public String name() {
@@ -179,7 +273,9 @@ public final class OrderDiscountSolution {
         }
 
         public BigDecimal discount(BigDecimal price, Order order) {
-            return delegate.discount(price, order).min(cap);
+            // 装饰器要把结果拿去 min()，所以必须先校验，不能等链节点 —— null 在这里就会 NPE。
+            BigDecimal raw = DiscountPolicy.valid(delegate.discount(price, order), delegate.name());
+            return raw.min(cap);
         }
     }
 
@@ -198,7 +294,7 @@ public final class OrderDiscountSolution {
         }
 
         public BigDecimal discount(BigDecimal price, Order order) {
-            BigDecimal before = delegate.discount(price, order);
+            BigDecimal before = DiscountPolicy.valid(delegate.discount(price, order), delegate.name());
             trace.add("    [trace] " + delegate.name() + " 算出 " + before.toPlainString());
             return before;
         }
@@ -219,6 +315,8 @@ public final class OrderDiscountSolution {
         }
 
         void apply(String label, BigDecimal reduction) {
+            // 兑底：任何一个算法都不该把价格减成负数。正常路径上链节点已经校验过一轮，
+            // 这里是「用不信任的眼光看待每一个外部输入」的最后一层。
             BigDecimal actual = reduction.min(price);
             price = price.subtract(actual);
             log.add(String.format("  %-26s -%s  →  %s", label, actual.toPlainString(), price.toPlainString()));
@@ -279,10 +377,13 @@ public final class OrderDiscountSolution {
         }
 
         protected Decision decide(ChainState state) {
-            if (!requirement.test(state.order)) {
+            // 门槛只在这里判一次：拿到的是「当前价」，不是订单原价。
+            if (!requirement.test(state.order, state.price)) {
                 return Decision.skipped(requirement.describe() + " 不满足");
             }
-            return Decision.applied(policy.discount(state.price, state.order));
+            // 所有策略的返回值统一从这里过一道：null / 负数 / 未对齐到分。
+            BigDecimal amount = DiscountPolicy.valid(policy.discount(state.price, state.order), policy.name());
+            return Decision.applied(amount);
         }
     }
 
@@ -303,11 +404,13 @@ public final class OrderDiscountSolution {
             if (state.usedGroups.contains(group)) {
                 return Decision.skipped("「" + group + "」组已占用");
             }
-            if (!requirement.test(state.order)) {
+            if (!requirement.test(state.order, state.price)) {
                 return Decision.skipped(requirement.describe() + " 不满足");
             }
+            // 先算钱、再占用组：算法抛异常时不该把组标记成已用。
+            BigDecimal amount = DiscountPolicy.valid(policy.discount(state.price, state.order), policy.name());
             state.usedGroups.add(group);
-            return Decision.applied(policy.discount(state.price, state.order));
+            return Decision.applied(amount);
         }
     }
 
@@ -356,7 +459,11 @@ public final class OrderDiscountSolution {
             }
 
             Builder cap(String amount) {
-                this.cap = new BigDecimal(amount);
+                BigDecimal value = new BigDecimal(amount);
+                if (value.signum() < 0) {
+                    throw new IllegalArgumentException("整链封顶不能为负：" + value.toPlainString());
+                }
+                this.cap = value;
                 return this;
             }
 
@@ -424,8 +531,8 @@ public final class OrderDiscountSolution {
         System.out.println("=== 改造后：条件 + 算法 + 链 + 装饰器 ===");
         List<String> trace = new ArrayList<>();
         DiscountChain chain = DiscountChain.builder()
-                .stage("满 100 减 20", new FullReduction(new BigDecimal("100"), new BigDecimal("20")),
-                        Requirement.atLeast("100"))
+                // 「满 100」在条件里，「减 20」在算法里 —— 一个满减券是两个对象，不是两个 if。
+                .stage("满 100 减 20", new FlatReduction(new BigDecimal("20")), Requirement.atLeast("100"))
                 .exclusive("会员九折", "折扣券", new Traced(new Percentage(new BigDecimal("0.9")), trace),
                         Requirement.memberOnly())
                 .exclusive("周末八五折", "折扣券", new Percentage(new BigDecimal("0.85")),
@@ -467,7 +574,7 @@ public final class OrderDiscountSolution {
         System.out.println();
 
         System.out.println("=== 两种「封顶」不是同一件事 ===");
-        System.out.println("1. 单个算法的上限 → 策略装饰器 Capped（本例把积分抵抵扣在 3 元）");
+        System.out.println("1. 单个算法的上限 → 策略装饰器 Capped（本例让积分最多抵 3 元）");
         System.out.println("2. 整条链的总上限 → 链对象上的约束（本例总减免超 50 就截断）");
         System.out.println("前者可以多个策略各配一个，后者全局只能有一个。搞混就会写出「优惠券各自封顶了，");
         System.out.println("但叠起来还是减了 200」的 bug。");
@@ -476,6 +583,74 @@ public final class OrderDiscountSolution {
         System.out.println("=== 注意：互斥只挡「同组第二张」，跨组照常叠加 ===");
         System.out.println("会员九折 与 周末八五折 同属「折扣券」组 → 第二张被跳过，见上面的日志。");
         System.out.println("满减、积分 属于其他组 → 正常叠加。");
+        System.out.println();
+
+        System.out.println("=== 边界一：满 100 的门槛，比原价还是比当前价 ===");
+        Order gap = new Order(new BigDecimal("120.00"), false, false, 0);
+        System.out.println("订单 120.00，先立减 30（当前价变 90.00），再问「满 100 减 20」：");
+        System.out.println("  按当前价（atLeast）       → " + chainPrice(gap, true).toPlainString());
+        System.out.println("  按原价（atLeastOriginal） → " + chainPrice(gap, false).toPlainString());
+        System.out.println("同样是「满 100」，两种口径差 20 元。代码不替你选，但签名逼你在装配时写下选哪个。");
+        System.out.println();
+
+        System.out.println("=== 边界二：装配顺序不同，结果不同（这是必须让运营看见的事实） ===");
+        Order mid = new Order(new BigDecimal("150.00"), true, false, 0);
+        System.out.println("订单 150.00，会员，券：满 100 减 20 + 会员九折");
+        System.out.println("  满减 → 九折：" + chainOrder(mid, true).toPlainString());
+        System.out.println("  九折 → 满减：" + chainOrder(mid, false).toPlainString());
+        System.out.println("差的 2 元来自「九折之后还满不满 100」。顺序本身是运营配置项，所以它必须出现在日志里。");
+        System.out.println();
+
+        System.out.println("=== 边界三：非法参数必须在装配期炸掉，而不是算出一个怪数 ===");
+        reject("折扣比例 1.2（无折扣）", () -> new Percentage(new BigDecimal("1.2")));
+        reject("折扣比例 0（白送）", () -> new Percentage(BigDecimal.ZERO));
+        reject("负数立减", () -> new FlatReduction(new BigDecimal("-5")));
+        reject("负数封顶（单算法）", () -> new Capped(new FlatReduction(BigDecimal.ONE), "-1"));
+        reject("负数封顶（整链）", () -> DiscountChain.builder()
+                .stage("立减 1", new FlatReduction(BigDecimal.ONE), Requirement.always())
+                .cap("-1"));
+        reject("负数门槛", () -> Requirement.atLeast("-100"));
+        System.out.println("以上全部在构造 / 装配阶段失败，不会流到计算里变成负数或 NaN 式的怪结果。");
+    }
+
+    /** 同一张订单、同一个「满 100」，只换门槛口径，看结果差多少。 */
+    private static BigDecimal chainPrice(Order order, boolean byCurrentPrice) {
+        Requirement threshold = byCurrentPrice ? Requirement.atLeast("100") : Requirement.atLeastOriginal("100");
+        return DiscountChain.builder()
+                .stage("立减 30", new FlatReduction(new BigDecimal("30")), Requirement.always())
+                .stage("满 100 减 20", new FlatReduction(new BigDecimal("20")), threshold)
+                .build()
+                .calculate(order)
+                .price
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** 同一批规则、两种装配顺序各建一条链，验证「顺序敏感」是事实而不是猜测。 */
+    private static BigDecimal chainOrder(Order order, boolean reductionFirst) {
+        DiscountChain.Builder builder = DiscountChain.builder();
+        if (reductionFirst) {
+            builder.stage("满 100 减 20", new FlatReduction(new BigDecimal("20")), Requirement.atLeast("100"))
+                    .exclusive("会员九折", "折扣券", new Percentage(new BigDecimal("0.9")),
+                            Requirement.memberOnly());
+        } else {
+            builder.exclusive("会员九折", "折扣券", new Percentage(new BigDecimal("0.9")),
+                            Requirement.memberOnly())
+                    .stage("满 100 减 20", new FlatReduction(new BigDecimal("20")), Requirement.atLeast("100"));
+        }
+        return builder.build()
+                .calculate(order)
+                .price
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /** 期望「构造即失败」的检查：没抛异常才算问题。 */
+    private static void reject(String what, Runnable action) {
+        try {
+            action.run();
+            System.out.println("  未拦截（错误）：" + what);
+        } catch (IllegalArgumentException e) {
+            System.out.println("  拒绝 " + what + " → " + e.getMessage());
+        }
     }
 
     private OrderDiscountSolution() {
