@@ -752,7 +752,7 @@ java -Dstdout.encoding=UTF-8 -cp out com.patterns.structural.adapter.Client > ru
 | SHA-256（前 16 位） | `17E89E88B9DB6AF1` |
 | 确定性 | 连跑两次逐行 diff 一致（本模块不含时间、随机数、身份哈希） |
 
-> 用 GBK 输出时字节数为 280、哈希不同；**行数恒为 9**。不同编码口径不可混比，见 `docs/05-verification.md` §4.1.1。
+> 用 GBK 输出时字节数为 280、哈希不同；**行数恒为 9**。不同编码口径不可混比，见 `docs/05-verification.md` §4.1。
 
 ## 7. 扩展对比
 

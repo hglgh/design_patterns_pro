@@ -121,6 +121,9 @@ v3 的「退款副作用」怎么放进这张表？______________________
 
 ---
 
+<details>
+<summary><b>展开参考答案（§6 ~ §13）</b> —— 建议先完成第 4 节的三道题，并打完第 5 节自检表</summary>
+
 ## 6. 变化点分析
 
 | 需求 | 变化的是什么 | 该动的机制 |
@@ -324,6 +327,8 @@ java docs/practice/solutions/OrderStateSolution.java
 - **想看工程版的完整实现**：[`behavioral/state`](../../src/com/patterns/behavioral/state/README.md)，里面有 `TransitionTable` 这个**刻意保留的反例**。
 - **想理解"什么时候状态模式该退化成枚举 + switch"**：[选择指南 §6](../pattern-selection-guide.md) 的"策略 vs 状态"小节。
 - **想看"状态 + 命令"怎么配合**（订单撤销）：[`behavioral/command`](../../src/com/patterns/behavioral/command/README.md)。
+
+</details>
 
 ---
 

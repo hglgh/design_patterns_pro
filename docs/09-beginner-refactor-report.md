@@ -124,7 +124,7 @@ javac -Xlint:all --release 25 -encoding UTF-8 -d out "@_verify/sources.txt"
 | stderr 总行数 | **0** |
 | stdout 总行数 | **2531** |
 
-25 个入口的 stdout 行数与 [05-verification.md](05-verification.md) §3 的历史基线逐项一致，说明新增入门 Demo 没有改变工程版行为。
+25 个入口的 stdout 行数与 [05-verification.md](05-verification.md) §5.1 的历史基线逐项一致，说明新增入门 Demo 没有改变工程版行为；当前版本的重测结果见同文 §2.3。
 
 ### 5.2 23 个入门 Demo
 
@@ -159,7 +159,7 @@ javac -Xlint:all --release 25 -encoding UTF-8 -d out "@_verify/sources.txt"
 | `build.bat` 运行循环把绝对路径当类名 | 编译正常但 25 个入口全部报「找不到主类」 | 当时**已修复并实测**：改用 `%~dp0` 拼绝对路径，并在 `for` 循环内直接运行。2026-11-08 该脚本已删除，改用标准 `javac` / `java`，这个坑随脚本一起消失 |
 | GBK 控制台下部分符号显示为 `?` | 如 `✓`、`→` 等不在 GBK 字符集内 | 这是控制台编码限制，不是程序错误；需要完整符号时用 `java -Dstdout.encoding=UTF-8` 运行单个入口 |
 | 没有单元测试 | 不能声称覆盖率 | 任务要求零依赖，不引入 JUnit；可复现性靠退出码、输出行数与文档核对 |
-| `docs/05-verification.md` 的 §2 仍是 287 文件基线 | 与当前 310 文件不一致 | 已在 05 顶部与 §9 标注历史基线口径，最新数据以本文与 §9 为准 |
+| `docs/05-verification.md` 曾以 287 文件为当前基线 | 与 310 文件不一致 | 2026-11-08 已解决：05 重组为「当前 §1~§4（310 文件）/ 历史 §5」两层，§5.1 明确保留 287 文件的历史基线 |
 | Linux / macOS 未实机验证 | 无跨平台实跑记录 | 当前环境只有 Windows；2026-11-08 删除构建脚本后，编译命令本身跨平台，但仍未在 Linux / macOS 上实跑 |
 
 ## 7. 怎么开始读

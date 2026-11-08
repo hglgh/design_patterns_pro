@@ -139,6 +139,9 @@ public Result<OrderVO> create(@RequestBody CreateOrderRequest req, HttpHeaders h
 
 ---
 
+<details>
+<summary><b>展开参考答案（§5 ~ §13）</b> —— 建议先完成第 3 节的三道题，并打完第 4 节自检表</summary>
+
 ## 5. 核心判断：链只能装"能说不"的东西
 
 这是本练习最重要的一句话：
@@ -290,7 +293,7 @@ classDiagram
     Guard <|.. ValidationGuard
     Guard <|.. RiskGuard
     Guard <|.. StockGuard
-    Pipeline *-- Guard : 有序列表（组合）
+    Pipeline o-- Guard : 有序列表（Builder 装配，外部创建）
     Pipeline ..> Outcome : 产出
     Pipeline ..> OrderRequest : 读写
     OrderService --> Pipeline : 委托校验
@@ -300,7 +303,7 @@ classDiagram
 **读图要点**：
 
 - 图上**没有** `Guard --> Guard next` 的自关联。因为链的遍历由 `Pipeline` 的 `for` 循环做，而不是节点互相持有 —— 这是"链"的另一种实现方式，比节点互相持有更简单（不需要 `setNext`，也不会有编译器看不到的顺序）；
-- `Pipeline *-- Guard` 用**组合**：管线的生命期包含节点，管线销毁节点也销毁；
+- `Pipeline o-- Guard` 用**聚合**：Guard 实例由 `Builder.add()` 从外部传入，`List.copyOf` 只复制引用列表；`StockGuard` 还同时被 `OrderService` 字段直接持有 —— 它显然不归 Pipeline 独占，所以不能画成组合（`*--`）；
 - `OrderService --> Pipeline`（普通关联）和 `OrderService --> StockGuard`（直接依赖具体类）：补偿逻辑必须是具体的，因为它要知道"怎么回滚"；
 - `StockGuard` **同时**是 `Guard` 和补偿提供者 —— 这是它的问题所在（一个类承担两个角色）。参考实现保留它是为了让"副作用进链"的问题可见，真实项目里应该拆成 `StockChecker`（Guard）+ `StockService`（补偿）。
 
@@ -415,6 +418,8 @@ Outcome run(OrderRequest request) {
 - **想看"装饰器和链怎么选"**：[选择指南 §6](../pattern-selection-guide.md) 的"责任链 vs 装饰器"小节。
 - **想看真实框架里的链**：[docs/06-modern-scenarios.md](../06-modern-scenarios.md) 的 Netty ChannelPipeline 与 Spring MVC 拦截器章节。
 - **想理解"管道"这个词的历史**：[docs/02-pattern-comparison.md](../02-pattern-comparison.md) 里有 Unix pipe 与责任链的对照。
+
+</details>
 
 ---
 

@@ -17,15 +17,21 @@
 
 按「这个模式靠什么机制成立」分四类，比笼统归并更接近代码事实。
 
-### 0.1 以继承为主：父类定骨架，子类填内容
+### 0.1 以子类型分派为主：父类型定契约，子类型填内容
 
-| 模式 | 继承在哪 | 本项目位置 |
-|---|---|---|
-| 模板方法 | 父类的 `processOrder` 是 `final` 的算法骨架，子类只实现 `pay` / `deliver`。**整个模式就是继承** | `templatemethod/OrderProcessTemplate.java` |
-| 解释器 | 「一条文法规则 = 一个类」的多态层次，递归求值靠子类型分派 | `interpreter/Expression.java`（`sealed`）+ 5 个 record 实现 |
-| 工厂方法 | 经典 GoF 形态是 Creator 抽象类 + 子类实现工厂方法，靠继承把 `new` 推迟 | 本项目用**接口形态**（`MessageFactory` + `NotificationService`），语义相同，但已不再是继承 |
+这三个模式都靠「父类型 + 子类型 + 运行期分派」成立，但**它们用的不是同一种 Java 机制**：
 
-> 工厂方法这一行值得留意：GoF 原书里 Creator 是抽象类，`createDocument()` 抽象，父类的 `newDocument()` 调用它——「延迟到子类」这个动作本身就是继承。本项目改成了接口 + 构造器注入，所以它落在「接口 + 多态」这一侧。**两种形态都叫工厂方法**，区别只在 Creator 用抽象类还是接口。
+| 模式 | Java 机制 | 复用了父类的实现吗 | 本项目证据 |
+|---|---|---|---|
+| 模板方法 | `abstract class` + `extends` | **是**。步骤顺序写在父类，子类只填两步 | `OrderProcessTemplate` 是 `public abstract class`，`public final processOrder()` 定顺序，`protected abstract pay/deliver` 留给子类 |
+| 解释器 | `sealed interface` + `record implements` | **否**。接口只声明方法，6 个节点各写各的，没有一行共享实现 | `Expression` 是 `public sealed interface`，`permits` 了 6 个实现（Number / Variable / Arithmetic / Unary / Comparison / Logical） |
+| 工厂方法 | `interface` + 实现类（本项目形态） | **否**。`MessageFactory` 只有 `createMessage()`，4 个工厂各自 `new` 自己的产品 | `MessageFactory` 是 `interface`，`NotificationService` 通过构造器**持有**一个 `MessageFactory` 字段 |
+
+> **这三行放在一起，正好说明「继承」这个词有多容易含糊。**
+> `extends` 复用父类的实现，`implements` 只声明「我满足这个契约」——两者都产生子类型、都能被父类型引用调用、都能运行期分派，但**只有 `extends` 会继承实现**。
+> 所以「模板方法靠继承、解释器也靠继承」这句话是错的：模板方法靠**实现继承**；解释器靠**接口实现 + 子类型多态**，它的递归求值还额外靠**组合**（`ArithmeticExpression` 这类组合节点持有子表达式）。
+
+> 工厂方法这一行值得留意：GoF 原书里 Creator 是抽象类，`createDocument()` 抽象，父类的 `newDocument()` 调用它——「延迟到子类」这个动作本身就是继承。本项目改成了接口 + 构造器注入，所以它落在「接口 + 多态」这一侧，`NotificationService` 还额外持有工厂对象。**两种形态都叫工厂方法**，区别只在 Creator 用抽象类还是接口。
 
 ### 0.2 以组合 + 委托为主：换一个对象就换一种行为
 
@@ -70,7 +76,17 @@
 
 ### 0.5 结论：组合是默认策略，不是万能解释
 
-23 个模式里：**10 个以组合委托为核心机制**，**6 个用组合但意图是解耦**，**3 个以继承为核心**，**4 个归不进去**。
+23 个模式里：
+
+| 靠什么机制成立 | 个数 | 是哪几个 |
+|---|---|---|
+| **类继承**（复用父类的骨架实现） | **1** | 模板方法 |
+| **接口实现 + 子类型多态** | **2** | 解释器（叠加递归组合）· 工厂方法（本项目形态；GoF 经典形态是类继承） |
+| **组合 + 委托**（换一个对象就换行为） | **10** | 策略 / 装饰器 / 代理 / 责任链 / 桥接 / 组合 / 观察者 / 状态 / 命令 / 享元 |
+| **用了组合，但意图是解耦** | **6** | 外观 / 适配器 / 迭代器 / 中介者 / 备忘录 / 访问者 |
+| **归不进去** | **4** | 单例 / 抽象工厂 / 建造者 / 原型 |
+
+合计 23。**真正「靠类继承复用实现」的只有模板方法 1 个**——这才是「组合优于继承」在 23 个模式里的真实分布：不是「组合变体有 21 个」，而是「需要复用实现时，只有一个模式选了继承」。
 
 所以正确的说法是：**「组合优于继承」是做设计选择时的默认策略**——当你需要复用实现、又不想把子类焊死在父类的实现细节上时，优先考虑装一个对象进来。它不能反过来解释所有模式，也不能代替「这个模式到底解决什么问题」这一问。搞不清这一条，后面的模式就只能靠背。
 
@@ -106,6 +122,25 @@
 | **设计原则** | Favor object composition over class inheritance 里的 composition = **对象组合 + 委托**的统称，**包含**聚合，甚至包含「只是用一个对象」 | 「为什么优先组合而不是继承？」 |
 
 **结论**：被问「组合 vs 聚合」答 UML 的强弱拥有；被问「组合 vs 继承」答复用机制。本文全篇讲的是后者。
+
+### 1.4 四种机制，别混着说
+
+Java 里能产生多态的写法有两种，能被称作「组合」的是一种，四者经常被笼统说成「继承和组合」：
+
+| 机制 | 写法 | 得到子类型？ | 复用实现？ | 运行期能换？ | 典型误用 |
+|---|---|---|---|---|---|
+| **类继承** | `class B extends A` | 是（B 是一种 A） | **是**（父类字段 + 方法） | 否（类在编译期定死） | 为复用 3 行代码继承一个基类 |
+| **接口实现** | `class B implements I` | 是（B 是一种 I） | **否**（只有 `default` 方法算） | 否（同一个对象改不了类型） | 以为 `implements` 能省掉重复代码 |
+| **子类型多态** | `I x = new B(); x.m();` | —（这是**用法**不是声明） | — | **是**（换一种 `new` 就换行为） | 以为多态就是继承，忘了接口也能多态 |
+| **对象组合** | `private final I field;` | **不产生** | 通过**委托**调用对方 | **是**（换字段指向的对象） | 把「字段是具体类」也当成可替换 |
+
+三条容易混的边界，每条都有本项目的反例：
+
+1. **`implements` 不是继承实现。** [`Expression`](../src/com/patterns/behavioral/interpreter/Expression.java) 是 `sealed interface`，6 个 record 各自写 `evaluate()`，谁也没从谁那儿继承一行代码。它靠的是「接口 + 子类型多态」，不是「继承」。
+2. **多态不是继承的同义词。** `MessageFactory` 是接口，`NotificationService` 只声明 `MessageFactory` 字段，调用 `createMessage()` 时照样是运行期分派。**多态的载体是父类型引用，不是 `extends` 关键字。**
+3. **组合本身不产生子类型。** `PriceCalculator` 持有 `DiscountStrategy`，但 `PriceCalculator` 并不是一种 `DiscountStrategy`。装饰器之所以能「包一层还是原类型」，是因为它**额外** `implements` 了 `TextComponent`，不是因为「组合」——把这两件事混起来，就会得出「组合也能替代继承」的错误结论。
+
+> 一句话记法：**继承和接口实现解决「你是谁」，多态解决「调用谁」，组合解决「你用什么」。**
 
 ---
 
@@ -388,11 +423,20 @@ public abstract class BeverageDemo {
 
 | 形态 | 字段长相 | 组装时机 | 本项目文件 | 对应模式 |
 |---|---|---|---|---|
-| **单个委托** | `private final Strategy s;` | 构造时定，可换新对象 | [`PriceCalculator`](../src/com/patterns/behavioral/strategy/PriceCalculator.java) | 策略 / 状态 / 桥接 |
-| **同类嵌套** | `private final Component inner;` | 构造时定，可叠多层 | [`TextDecorator`](../src/com/patterns/structural/decorator/TextDecorator.java) | 装饰器 / 代理 / 责任链 |
-| **多个同类** | `private final List<Node> children;` | 运行中可增删 | [`Directory`](../src/com/patterns/structural/composite/Directory.java) | 组合 / 观察者 |
+| **单个委托** | `private final DiscountStrategy strategy;` | 构造时定，可换新对象 | [`PriceCalculator`](../src/com/patterns/behavioral/strategy/PriceCalculator.java) | 策略 / 状态 / 桥接 |
+| **同类嵌套** | `protected final TextComponent component;` | 构造时定，可叠多层 | [`TextDecorator`](../src/com/patterns/structural/decorator/TextDecorator.java) | 装饰器 / 代理 / 责任链 |
+| **多个同类** | `private final List<FileSystemNode> children;` | 运行中可增删 | [`Directory`](../src/com/patterns/structural/composite/Directory.java) | 组合 / 观察者 |
 
-**三者唯一的共同点：字段类型永远是接口（或抽象类型）**。这一条是组合能不能成立的技术前提——字段一旦写成具体类，插槽就焊死了，灵活性归零。
+**需要被替换的那一类组合，字段类型必须是抽象类型（接口或抽象类）**：字段一旦写成具体类，插槽就焊死了，多态替换能力归零。
+
+但 `has-a` 不都为了替换。[`Order`](../src/com/patterns/behavioral/state/Order.java) 里还有一个 `private final List<HistoryEntry> history` —— `HistoryEntry` 是**具体 record**，它不需要多态，要的是「按顺序累积过去的转移记录」。这里的组合是**持有数据**，不是**持有插槽**：
+
+| 字段 | 类型 | 目的 | 需要多态吗 |
+|---|---|---|---|
+| `PriceCalculator.strategy` | 接口 | 换算法 | 要 |
+| `Order.history` | 具体 record | 累积记录 | 不要 |
+
+判据不是「字段是不是接口」，而是：**这个字段存在的目的是「以后要换一种实现」，还是「现在就存这一类数据」？** 前者必须抽象，后者抽象了反而是过度设计。
 
 ---
 
@@ -506,7 +550,7 @@ private final FullReductionStrategy strategy;   // ✗ 只能满减，换不了
 | 6 | 两个变化维度时为什么必须用组合 | 继承成本是维度乘积（类爆炸），组合是维度之和 |
 | 7 | 「组合优于继承」是不是意味着永远不用继承 | 不是。骨架固定、框架回调、类型层次真实时继承更合适 |
 | 8 | 组合的最大代价是什么 | 对象数量变多、转发样板代码、调用链变深，排错要顺链找 |
-| 9 | 把 23 个模式全说成「组合的变体」，错在哪里 | 错在三类：以继承为骨架的（模板方法 / 解释器 / 经典工厂方法）、用组合但意图是解耦的（外观 / 适配器 / 迭代器 / 中介者 / 备忘录 / 访问者）、压根不靠复用机制的（单例）——详见 §0 |
+| 9 | 把 23 个模式全说成「组合的变体」，错在哪里 | 错在四类：只有模板方法真的靠**类继承**；解释器和工厂方法靠**接口实现 + 子类型多态**；10 个靠组合委托；另有 6 个用组合但意图是解耦、4 个归不进去——详见 §0 |
 
 ---
 

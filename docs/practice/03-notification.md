@@ -132,6 +132,9 @@ void send(Notice notice) {
 
 ---
 
+<details>
+<summary><b>展开参考答案（§6 ~ §13）</b> —— 建议先完成第 4 节的三道题，并打完第 5 节自检表</summary>
+
 ## 6. 核心判断：广播 ≠ 链
 
 | | 责任链 | 观察者 / 事件总线 |
@@ -330,6 +333,8 @@ List<String> publish(Notice notice) {
 - **想看"中介者真正该用的场合"**：[`behavioral/mediator`](../../src/com/patterns/behavioral/mediator/README.md) —— 那里有多个对象互相通信，拓扑确实是网状的。
 - **想看"命令模式 + 队列"**：[`behavioral/command`](../../src/com/patterns/behavioral/command/README.md)
 - **想看 Spring 的事件机制怎么对应到这里**：[docs/06-modern-scenarios.md](../06-modern-scenarios.md) 的 Spring 事件章节。
+
+</details>
 
 ---
 

@@ -767,7 +767,7 @@ java -Dstdout.encoding=UTF-8 -cp out com.patterns.creational.builder.Client > ru
 | SHA-256（前 16 位） | `BE8BF185A09C825C` |
 | 确定性 | 连跑两次逐行 diff 一致 |
 
-> 若不加 `-Dstdout.encoding=UTF-8`，Windows 控制台默认 GBK，中文占 2 字节，字节数与哈希都会变——**行数不变**。这是编码口径差异，不是代码被改过（详见 `docs/05-verification.md` §4.1.1）。
+> 若不加 `-Dstdout.encoding=UTF-8`，Windows 控制台默认 GBK，中文占 2 字节，字节数与哈希都会变——**行数不变**。这是编码口径差异，不是代码被改过（详见 `docs/05-verification.md` §4.1）。
 
 ## 7. 扩展对比
 

@@ -10,7 +10,7 @@
 - **两层教学 + 一层实践**：`BEGINNER.md` 讲「为什么这样设计」，`README.md` 讲「实现细节与适用边界」，[综合练习](docs/practice/README.md) 讲「拿到需求怎么自己推」。
 - **两个真实组合案例**：`orderservice`（策略 + 装饰器 + 责任链 + 工厂）与 `apigateway`（责任链 + 策略 + 装饰器 + 状态 + 观察者 + 享元），后者配 5092 行深度拆解与 304 行可复现输出。
 - **设计能力主线**：[docs/pattern-selection-guide.md](docs/pattern-selection-guide.md) 回答「什么时候该抽象、该用哪个、怎么避免过度设计」，给出「业务问题 → 关键变化点 → 候选模式 → 方案比较 → 最终设计」的完整推导链。
-- **综合练习 5 题**：[docs/practice/](docs/practice/README.md) 五个真实业务任务（订单优惠 / 状态流转 / 消息通知 / 报表导出 / 请求管线），每题都把参考答案折叠在后半段，**必须自己先想**。
+- **综合练习 5 题**：[docs/practice/](docs/practice/README.md) 五个真实业务任务（订单优惠 / 状态流转 / 消息通知 / 报表导出 / 请求管线），每题都用 `<details>` 把参考答案默认折叠在分界线之后，**必须自己先想**。
 - **UML 图谱**：[docs/10-uml-atlas.md](docs/10-uml-atlas.md) 25 张类图 + 2 张时序图，全部对着真实类名绘制，附录有「图 ↔ 代码」对照表与画图三坑。
 - **现代场景地图**：[docs/06-modern-scenarios.md](docs/06-modern-scenarios.md) 把 23 个模式映射到 JDK 源码、主流框架扩展点与云原生组件上，并回答「record / sealed / 虚拟线程出现后还要不要手写」。
 - **原理专文**：[docs/07-composition-vs-inheritance.md](docs/07-composition-vs-inheritance.md) 用装机、奶茶加料、泡茶、文件夹四个现实场景，把「组合 vs 继承」逐条映射到代码；§0 按 23 个模式的真实实现做了严谨四分类，**不把 23 个模式笼统归为组合**。
@@ -53,13 +53,13 @@
 | Java 源文件 | **310**（`src/` 下，含 `util` 工具包 2 个、23 个入门 Demo） |
 | 工程代码行数 | **35614**（仅 `src/`，物理行） |
 | 练习参考实现 | **5** 个单文件（`docs/practice/solutions/`，合计 2028 行，均可 `java Xxx.java` 直接跑） |
-| 学习文档 | **67** 份 md、**114077** 行：25 份模块 README + 23 份 BEGINNER + 19 份项目级文档 |
+| 学习文档 | **67** 份 md、**114331** 行：25 份模块 README + 23 份 BEGINNER + 19 份项目级文档 |
 | 可视化 | **40** 张 Mermaid 图：UML 图谱 27 张（25 类图 + 2 时序图）、选择指南 3 张决策图、练习题 10 张（类图 / 时序图 / 流程图） |
 | 编译产物 | **558** 个 class，`javac --release 25 -Xlint:all` **0 错误 0 告警** |
 | 运行验证 | **25** 个工程入口全部退出码 0，stderr **0 行**，stdout 合计 **2531** 行 |
-| 文档审计 | **710** 条相对链接全部命中，**失效 0**，围栏全偶数 |
+| 文档审计 | **725** 条相对链接全部命中，**失效 0**，围栏全偶数 |
 
-> 统计口径：文件数 = 递归枚举结果；行数 = 文件内容换行符个数（不含末尾空行）。
+> 统计口径：文件数 = 递归枚举结果；行数 = **换行符个数**（文件末尾没有换行时补 1）。即每个换行符结束一行，不在末尾额外补空行；反过来说，程序输出里**故意打印的空行也算一行**，这也是 25 个入口合计 2531 行（而不是 2526）的原因。
 > 完整验证数据见 [docs/05-verification.md](docs/05-verification.md)。
 
 ## 快速开始
@@ -104,7 +104,7 @@ java src/com/patterns/behavioral/strategy/beginner/BeginnerDemo.java
 
 **4. 一次跑完全部 25 个工程入口**
 
-25 个入口类名、逐条输出行数与哈希见 [docs/05-verification.md](docs/05-verification.md) §3，照着表逐条 `java -cp out …` 执行即可。
+25 个入口类名与逐条输出行数见 [docs/05-verification.md](docs/05-verification.md) §2.3；字节数与 SHA256 基线见 §5.1，照着表逐条 `java -cp out …` 执行即可。
 
 ## 项目结构
 
@@ -115,7 +115,7 @@ design_patterns_pro/
 │   ├── 00-source-review.md       # 原项目源码审查报告
 │   ├── 01-learning-path.md       # 推荐学习顺序
 │   ├── 02-pattern-comparison.md  # 相似模式对比（定义差异 + 代码对照）
-│   ├── 03-optimization-log.md    # 项目优化记录（含三轮改造日志）
+│   ├── 03-optimization-log.md    # 项目优化记录（含四轮改造日志）
 │   ├── 05-verification.md        # 编译运行验证结果与重跑方法
 │   ├── 06-modern-scenarios.md    # 现代场景：JDK / 框架 / 云原生里的模式落点
 │   ├── 07-composition-vs-inheritance.md # 组合 vs 继承：23 模式的严谨四分类
@@ -240,7 +240,7 @@ design_patterns_pro/
 | 1. 建立直觉 | 任选 5 个模式（建议：策略 / 装饰器 / 责任链 / 观察者 / 模板方法）的 `BEGINNER.md` | 说清「模式解决的是什么问题」 | [入门索引](#入门文档索引) |
 | 2. 看穿机制 | [组合 vs 继承](docs/07-composition-vs-inheritance.md) §1~§7 | 解释「为什么用组合而不是继承」 | [07](docs/07-composition-vs-inheritance.md) |
 | 3. 分清相似 | [相似模式对比](docs/02-pattern-comparison.md) + [选择指南](docs/pattern-selection-guide.md) §4~§6 | 在四个候选里选出一个并说明理由 | [02](docs/02-pattern-comparison.md) · [指南](docs/pattern-selection-guide.md) |
-| 4. 自己推导 | [综合练习](docs/practice/README.md) 任选两题，先做 4 节再看答案 | 从需求数出变化维度 | [practice](docs/practice/README.md) |
+| 4. 自己推导 | [综合练习](docs/practice/README.md) 任选两题，先做完「你的任务」与自检表再看答案 | 从需求数出变化维度 | [practice](docs/practice/README.md) |
 | 5. 看真实组合 | [orderservice](src/com/patterns/combined/orderservice/README.md) · [apigateway](src/com/patterns/combined/apigateway/README.md) | 识别模式之间的 4~6 个接缝 | [combined](src/com/patterns/combined) |
 | 6. 联系工程 | [现代应用场景](docs/06-modern-scenarios.md) + [UML 图谱](docs/10-uml-atlas.md) | 在 JDK / Spring / MyBatis / Netty 里认出模式 | [06](docs/06-modern-scenarios.md) |
 | 7. 反向能力 | [选择指南 §8 五次过度设计](docs/pattern-selection-guide.md) + 各练习的「过度设计」节 | **判断什么时候不该用模式** | [指南 §8](docs/pattern-selection-guide.md) |

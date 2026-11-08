@@ -15,10 +15,28 @@
 |---|---|---|
 | `A <\|-- B` | 继承 | B **是一种** A |
 | `A <\|.. B` | 实现 | B **实现了**接口 A |
-| `A --> B` | 关联 | A **持有** B 的引用（字段） |
-| `A o-- B` | 聚合 | A 管理一组 B，B 可以独立存在 |
-| `A *-- B` | 组合 | A 销毁时 B 跟着销毁（本项目里只有「静态内部类」这一处真是这个语义） |
-| `A ..> B` | 依赖 | A 在方法里**临时用到** B（参数、局部变量、返回值） |
+| `A --> B` | 关联 | A **持有** B 的引用（字段），B 由外部创建或注册 |
+| `A o-- B` | 聚合 | A 持有一组 B，B 是 A 的组成部分，但可以独立存在 |
+| `A *-- B` | 组合 | A **独占创建** B，B 不对外泄漏，A 没了 B 也没人用 |
+| `A ..> B` | 依赖 | A 在方法里**临时用到** B（参数、局部变量、返回值，含方法内 new 完就返回） |
+
+#### 0.1.1 画 `*--` 之前先过三个条件
+
+| # | 条件 | 本项目的反例 |
+|---|---|---|
+| 1 | A **持有** B 的字段（不是只在方法里 `new`） | `TextDocument.layout()` 里 new 出 `CharacterView` 再返回——应画 `..>` |
+| 2 | B **由 A 创建**，不是外部传进来、注册进来 | `ContentCreator.subscribe(observer)` 的观察者——应画 `-->` |
+| 3 | B **不对外泄漏**，A 没了 B 就没人用 | `Directory.children()` 返回副本，节点仍可被外部引用——应画 `o--` |
+
+**最容易犯的错：把 static nested class 当成组合。** `Computer.Builder` 写成 `Computer` 的静态内部类，编译后类名是 `Computer$Builder`，这**只是命名空间归属**：
+
+- `Computer` 的 6 个字段（`cpu/memory/hardDisk/gpu/powerSupply/caseType`）里**没有** `Builder`；
+- `Builder` 也不持有 `Computer`，它只在 `build()` 里把字段读出来 `new Computer(this)`；
+- 两者生命周期互不绑定：`new Computer.Builder()` 可以独立存在，`Computer` 用完丢掉后 Builder 照样能用。
+
+所以画 `Computer *-- Builder` 是**错的**，那一节里改成了两条 `..>` 依赖。Java 的内嵌类解决的是「这个类型只服务外部类」的命名与访问问题，**与「对象组合」是两个维度的事**。
+
+> 按这三条查一遍，**本项目 25 张类图里一条 `*--` 都不该有**——因为没有任何一个模式真的独占创建并封装了另一个对象。练习 [01](practice/01-order-discount.md) / [05](practice/05-api-request.md) 里原本各有一条 `*--`，按同一标准也已改成 `o--`（节点都是 Builder 装配后传入的）。这本身就是个结论：GoF 模式用组合，用的大多是「可替换」和「可独立存在」，不是「强拥有」。
 
 ### 0.2 每个模式的图后面固定四行
 
@@ -219,7 +237,7 @@ classDiagram
         +construct() Computer
         +constructMinimal() Computer
     }
-    Computer *-- Builder : 静态内部类
+    Computer ..> Builder : 构造器读取字段（一次性）
     Builder ..> Computer : build() 校验后创建
     ComputerBuilder <|.. GamingComputerBuilder
     ComputerBuilder <|.. OfficeComputerBuilder
@@ -232,7 +250,9 @@ classDiagram
 - **谁控制流程**：`Director.construct()` 固定调用顺序；`Builder.build()` 做最后校验
 - **变化点**：加一种机型 = 新增一个 `ComputerBuilder`；加一个可选参数 = 只改 `Builder` 加一个方法
 
-> 这里出现了两个不同形状的 Builder，是刻意的：`Computer.Builder` 是**静态内部类**（UML 组合关系 `*--`），`ComputerBuilder` 是**接口 + 实现类**（供 `Director` 编排）。前者是「简化 Builder」，后者是 GoF 原书的经典形态。
+> 这里出现了两个不同形状的 Builder，是刻意的：`Computer.Builder` 是**静态嵌套类**，`ComputerBuilder` 是**接口 + 实现类**（供 `Director` 编排）。前者是「简化 Builder」，后者是 GoF 原书的经典形态。
+>
+> **`Computer.Builder` 不要画成 `*--`。** 静态嵌套类只是把 `Builder` 的定义放进 `Computer` 的名字空间（编译成 `Computer$Builder.class`），`Computer` 并没有 `Builder` 字段，两者生命周期也不绑定。真正的关系只有两条依赖：`Builder.build()` 创建 `Computer`，`Computer` 的私有构造器从 `Builder` 读一次字段。**嵌套 ≠ 组合**，这是本图集最容易画错的一处。
 
 ### 5. 原型 Prototype
 
@@ -474,23 +494,26 @@ classDiagram
         +render() String
     }
     class TextDocument {
+        -String text
+        -String font
         -GlyphFactory factory
-        -List~CharacterView~ views
-        +append(text, fontSize, color) void
+        +layout(startX, startY, color) List~CharacterView~
     }
     Glyph <|.. CharacterGlyph
     GlyphFactory --> Glyph : 池化共享（内部状态）
     CharacterView --> Glyph : 引用共享对象
     TextDocument --> GlyphFactory
-    TextDocument o-- CharacterView : 外部状态
+    TextDocument ..> CharacterView : layout() 内创建并返回
 ```
 
 - **谁创建**：`GlyphFactory.get()`（池里没有才创建）
-- **谁持有**：工厂持有池；`CharacterView` 持有共享的 `Glyph`
-- **谁控制流程**：`TextDocument.append()` → `factory.get()` 拿共享字形 → 把位置/字号/颜色存进新 `CharacterView`
+- **谁持有**：工厂持有池；`CharacterView` 持有共享的 `Glyph`；**`TextDocument` 只持有 `text` / `font` / `factory`，排版结果是 `layout()` 的返回值，不是一个字段**
+- **谁控制流程**：`TextDocument.layout()` → `factory.getGlyph(ch, font)` 拿共享字形 → `new CharacterView(...)` 存位置/字号/颜色
 - **变化点**：加一种字体 = 池里多几个 key；**共享对象的数量不随文本长度增长**
 
 > 这张图的核心是「**内部状态 vs 外部状态**」：`symbol` + `font` 存进享元（可共享），`x/y/fontSize/color` 留在 `CharacterView`（不可共享）。画 UML 时如果只画 `Glyph` 和 `GlyphFactory`，就丢掉了这个模式最重要的一半。
+>
+> 另一个容易被画错的地方：`TextDocument` **不持有** `CharacterView` 列表，它每次都按文本重新排版并返回一个新列表。所以这里用 `..>` 而不是 `o--`——是否「持有」以字段为准，不以「方法返回了这类对象」为准。
 
 ### 12. 代理 Proxy
 
@@ -804,7 +827,7 @@ classDiagram
     Participant <|.. Warehouse
     Participant <|.. Finance
     Participant <|.. Notifier
-    AfterSalesHub o-- Participant : 按 Role 索引
+    AfterSalesHub --> Participant : 按 Role 索引（外部 join 注册）
     Customer ..> CollaborationHub : 只说给 Hub 听
     Agent ..> CollaborationHub : 只说给 Hub 听
     AfterSalesHub ..> Message : 路由消息
@@ -924,7 +947,7 @@ classDiagram
     Observer <|.. EmailObserver
     Observer <|.. InAppObserver
     Observer <|.. PushObserver
-    ContentCreator o-- Observer : 一对多
+    ContentCreator --> Observer : 一对多（外部 subscribe 注册）
     ContentCreator ..> Event : 构造事件
     ContentCreator ..> DispatchReport : 汇总投递结果
     DispatchReport o-- Delivery
@@ -936,7 +959,7 @@ classDiagram
 - **谁控制流程**：`publishArticle()` → 构造 `Event` → 遍历观察者 `onEvent()` → 汇总 `DispatchReport`
 - **变化点**：加一个通知渠道 = 新增 `Observer` 实现；**主题类不改**
 
-> 用 `Map` 而不是 `List` 是一个真实工程决定：同一个人可能用两个账号关注同一个作者，`List` 会发出两条，`Map` 以 `id()` 为键天然去重。图里 `o--` 的数量关系是「一对多」，但**键的唯一性**这一层信息只有代码里有。
+> 用 `Map` 而不是 `List` 是一个真实工程决定：同一个人可能用两个账号关注同一个作者，`List` 会发出两条，`Map` 以 `id()` 为键天然去重。图里用的是关联（`-->`）而不是聚合：观察者由外部通过 `subscribe()` 注册，主题不负责它们的创建与销毁，**订阅关系只在运行时成立**。
 
 ### 20. 状态 State
 
@@ -1338,7 +1361,7 @@ classDiagram
     ServiceHandler ..> UpstreamInstance
     RouterFilter --> RouteTable
     RouterFilter --> LoadBalancer
-    RouteTable o-- UpstreamInstance : 享元池
+    RouteTable --> UpstreamInstance : 享元池（共享实例，不拥有生命周期）
     Gateway ..> GatewayListener : 通知
     LoadBalancer ..> UpstreamInstance
 ```

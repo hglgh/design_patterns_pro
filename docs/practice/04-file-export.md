@@ -118,6 +118,9 @@ static String exportCsv(List<OrderRow> rows) {
 
 ---
 
+<details>
+<summary><b>展开参考答案（§6 ~ §13）</b> —— 建议先完成第 4 节的三道题，并打完第 5 节自检表</summary>
+
 ## 6. 核心判断：一个维度只能用一个机制
 
 这是本练习唯一需要记住的结论：
@@ -346,6 +349,8 @@ final String export(LocalDate day) {
 - **想看装饰器的更多层数**：[`structural/decorator`](../../src/com/patterns/structural/decorator/README.md)
 - **想理解"策略和模板方法怎么选"**：[选择指南 §6](../pattern-selection-guide.md) 的"模板方法 vs 策略"小节 —— 判据是"变化的是步骤内实现，还是步骤的集合本身"。
 - **想看真实项目里的导出模块**（Spring Batch 的 `ItemReader/Processor/Writer`）：[docs/06-modern-scenarios.md](../06-modern-scenarios.md)。
+
+</details>
 
 ---
 

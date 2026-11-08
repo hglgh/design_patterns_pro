@@ -25,11 +25,11 @@
 
 | 文档 | 讲什么 | 长度 |
 |---|---|---|
-| [pattern-selection-guide.md](pattern-selection-guide.md) | **从业务需求推导设计**：三误区 → 六步推导 → 何时抽象 → 接口/继承/组合 → 三类模式各怎么选 → 五版演进 → 五次过度设计 → 21 行决策卡片 | 856 行 |
-| [02-pattern-comparison.md](02-pattern-comparison.md) | 相似模式的**定义级**差异，带代码对照 | 约 700 行 |
-| [07-composition-vs-inheritance.md](07-composition-vs-inheritance.md) | 组合与继承的成本对照；§0 是 23 个模式的**严谨四分类**（继承为主 3 / 组合委托为主 10 / 用组合但意图不是组合 6 / 归不进去 4） | 约 800 行 |
-| [10-uml-atlas.md](10-uml-atlas.md) | 25 张类图 + 2 张时序图。每张图固定回答四件事：谁创建、谁持有、谁控制流程、变化时改谁 | 1446 行 |
-| [01-learning-path.md](01-learning-path.md) | 学习顺序的详细说明（三条路线：速成 / 系统 / 设计能力） | 250 行 |
+| [pattern-selection-guide.md](pattern-selection-guide.md) | **从业务需求推导设计**：三误区 → 六步推导 → 何时抽象 → 接口/继承/组合 → 三类模式各怎么选 → 五版演进 → 五次过度设计 → 21 行决策卡片 | 858 行 |
+| [02-pattern-comparison.md](02-pattern-comparison.md) | 相似模式的**定义级**差异，带代码对照 | 405 行 |
+| [07-composition-vs-inheritance.md](07-composition-vs-inheritance.md) | 组合与继承的成本对照；§0 是 23 个模式的**严谨四分类**（子类型分派 3 = 类继承 1 + 接口实现 2 / 组合委托 10 / 用组合但意图不是组合 6 / 归不进去 4）；§1.4 把 extends / implements / 多态 / 组合拆开 | 563 行 |
+| [10-uml-atlas.md](10-uml-atlas.md) | 25 张类图 + 2 张时序图。每张图固定回答四件事：谁创建、谁持有、谁控制流程、变化时改谁 | 1471 行 |
+| [01-learning-path.md](01-learning-path.md) | 学习顺序的详细说明（三条路线：速成 / 系统 / 设计能力） | 253 行 |
 
 ### 练设计
 
@@ -53,7 +53,7 @@
 | 文档 | 讲什么 | 什么时候看 |
 |---|---|---|
 | [00-source-review.md](00-source-review.md) | 接手原项目时的源码审查：问题清单、优先级、已修/未修 | 想知道「为什么代码长这样」 |
-| [03-optimization-log.md](03-optimization-log.md) | 三轮改造日志（第三轮为本次：删构建脚本、修理论错误、补 UML / 选择指南 / 练习） | 想知道改了什么、为什么改 |
+| [03-optimization-log.md](03-optimization-log.md) | 四轮改造日志（§8 第三轮：删构建脚本、修理论错误、补 UML / 选择指南 / 练习；§9 第四轮收尾：只修准确性与一致性） | 想知道改了什么、为什么改 |
 | [05-verification.md](05-verification.md) | 编译命令、25 个入口的逐条输出、文档链接审计、**已知未验证项** | 想自己重跑验证 |
 | [08-beginner-teaching-template.md](08-beginner-teaching-template.md) | 入门文档的八段式模板与验收清单 | 想新增或改写 `BEGINNER.md` |
 | [09-beginner-refactor-report.md](09-beginner-refactor-report.md) | 23 份 `BEGINNER.md` 的改造范围、逐类规模、已知问题 | 想了解入门层的质量基线 |

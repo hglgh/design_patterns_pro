@@ -173,6 +173,9 @@ v5 要「积分单券最多抵 3 元」时我要改：
 
 ---
 
+<details>
+<summary><b>展开参考答案（§6 ~ §13）</b> —— 建议先完成第 4 节的三道题，并打完第 5 节自检表</summary>
+
 ## 6. 变化点分析
 
 | 需求 | 盒子 | 正确机制 | 错误机制（常见误判） |
@@ -299,7 +302,7 @@ classDiagram
     PolicyNode --> DiscountPolicy : 委托
     PolicyNode --> Requirement : 先问条件
     ExclusiveNode --> DiscountPolicy : 委托
-    DiscountChain *-- DiscountHandler : head
+    DiscountChain o-- DiscountHandler : head（Builder 装配后传入）
     DiscountChain ..> Requirement : Builder 装配
 ```
 
@@ -307,7 +310,7 @@ classDiagram
 
 - `DiscountHandler` 持有 `next`（自关联）—— 链的形状；
 - `PolicyNode` **同时**依赖 `DiscountPolicy` 和 `Requirement` —— 这是"策略"和"链"的接缝；
-- `DiscountChain` 用组合（`*--`）持有 head，因为它负责生命期；
+- `DiscountChain` 用聚合（`o--`）持有 head：节点由 `Builder` 创建并 `linkTo` 串好，再作为参数传进 `DiscountChain` —— 链对象只负责「从哪进、整体封顶」，不负责节点的生与死，所以不是组合（`*--`）；
 - `Requirement` 和 `DiscountPolicy` 都没有指向 `Order` 以外的依赖 —— 它们可以被单测。
 
 ## 9. 执行流程
@@ -417,6 +420,8 @@ for (int i = 1; i < nodes.size(); i++) {
 - **想再看一遍同类设计**：[`combined/orderservice`](../../src/com/patterns/combined/orderservice/README.md) 是同一套思路的工程版，多了账本、追踪、配置解析。
 - **想理解"策略和链为什么能拼在一起"**：[选择指南 §6](../pattern-selection-guide.md) 有五种"策略 vs 责任链"的对比场景。
 - **想理解"什么时候连策略都不该用"**：[选择指南 §7](../pattern-selection-guide.md) 的"订单优惠五版演进"讲了同一需求在五个阶段的**不同最优解** —— 第一版最优解是 if-else。
+
+</details>
 
 ---
 

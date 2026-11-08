@@ -687,7 +687,7 @@ java -Dstdout.encoding=UTF-8 -cp out com.patterns.creational.prototype.Client > 
 | SHA-256（前 16 位） | `7412EB2B5CA64B95` |
 | 确定性 | 连跑两次哈希一致 |
 
-> 不加 `-Dstdout.encoding=UTF-8` 时 Windows 默认 GBK，中文占 2 字节，字节数与哈希都会变，**行数不变**。详见 `docs/05-verification.md` §4.1.1。
+> 不加 `-Dstdout.encoding=UTF-8` 时 Windows 默认 GBK，中文占 2 字节，字节数与哈希都会变，**行数不变**。详见 `docs/05-verification.md` §4.1。
 
 ## 7. 扩展对比
 
